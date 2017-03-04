@@ -1,0 +1,12 @@
+{
+  "name": "ngo",
+  "version": "0.0.1",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@angular/material": "^2.0.0-beta.2",
+    "@types/node": "^7.0.5",
+    "ts-node": "^2.1.0",
+    "typescript": "2.1"
+  }
+}
