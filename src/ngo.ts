@@ -1,16 +1,104 @@
 import * as fs from 'fs';
 import * as ts from 'typescript';
 
-const script = process.argv[2];
-let contents = fs.readFileSync(script).toString();
+export function scrubFile(file: string, name: string): string {
+  let contents = fs.readFileSync(file).toString();
 
-const options: ts.CompilerOptions = {
-  allowJs: true,
-};
-const program = ts.createProgram([script], options);
-const source = program.getSourceFile(script);
-//const source = ts.createSourceFile(script, contents, ts.ScriptTarget.ES5, false, ts.ScriptKind.JS);
-const checker = program.getTypeChecker();
+  const options: ts.CompilerOptions = {
+    allowJs: true,
+  };
+
+  const program = ts.createProgram([file], options);
+  const source = program.getSourceFile(file);
+
+  const checker = program.getTypeChecker();
+
+  const ngMetadata = findAngularMetadataImports(source);
+  const decorate = findDecorateFunction(source);
+
+  let nodes: ts.Node[] = [];
+  ts.forEachChild(source, node => {
+    if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
+      return;
+    }
+    if (isDecoratorAssignmentExpression(node as ts.ExpressionStatement)) {
+      nodes.push(...pickDecorationNodesToRemove(node as ts.ExpressionStatement, ngMetadata, checker));
+    }
+  });
+
+  if (!!decorate) {
+    const helper = node => {
+      if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
+        ts.forEachChild(node, helper);
+        return;
+      }
+      if (isDecorationAssignment(node as ts.ExpressionStatement, decorate, checker)) {
+        const decNodes = pickDecorateNodesToRemove(node as ts.ExpressionStatement, decorate, ngMetadata, checker);
+        decNodes.forEach((decNode: any) => decNode._comma = true);
+        nodes.push(...decNodes);
+        return;
+      }
+      ts.forEachChild(node, helper);
+    };
+    ts.forEachChild(source, helper);
+  }
+
+  console.log('LOG', name, `processed ${nodes.length} nodes`);
+
+  nodes.forEach(node => {
+    const commaOffset = (node as any)._comma ? 1 : 0;
+    contents = replaceSubstr(contents, node.getStart(), node.getEnd() + commaOffset);
+  });
+
+  return contents;
+}
+
+function isDecorationAssignment(node: ts.ExpressionStatement, decorate: ts.VariableDeclaration, checker: ts.TypeChecker): boolean {
+  if (node.expression.kind !== ts.SyntaxKind.BinaryExpression) {
+    return false;
+  }
+  const binEx = node.expression as ts.BinaryExpression;
+
+  if (binEx.right.kind !== ts.SyntaxKind.CallExpression) {
+    return false;
+  }
+  const callEx = binEx.right as ts.CallExpression;
+
+  if (callEx.arguments.length !== 2) {
+    return false;
+  }
+  const arg = callEx.arguments[0];
+  if (arg.kind !== ts.SyntaxKind.ArrayLiteralExpression) {
+    return false;
+  }
+
+  if (!!callEx.expression && callEx.expression.kind === ts.SyntaxKind.Identifier && nodeIsDecorate(callEx.expression, decorate, checker)) {
+    return true;
+  }
+
+  return false;
+}
+
+function pickDecorateNodesToRemove(node: ts.ExpressionStatement, decorate: ts.VariableDeclaration, ngMetadata: ts.ImportSpecifier[], checker: ts.TypeChecker): ts.Node[] {
+  const binEx = expect<ts.BinaryExpression>(node.expression, ts.SyntaxKind.BinaryExpression);
+  const callEx = expect<ts.CallExpression>(binEx.right, ts.SyntaxKind.CallExpression);
+  const metadata = expect<ts.ArrayLiteralExpression>(callEx.arguments[0], ts.SyntaxKind.ArrayLiteralExpression);
+  return metadata.elements.filter(exp => {
+    return isAngularDecoratorCall(exp, ngMetadata, checker);
+  });
+}
+
+function isAngularDecoratorCall(node: ts.Expression, ngMetadata: ts.ImportSpecifier[], checker: ts.TypeChecker): boolean {
+  if (node.kind !== ts.SyntaxKind.CallExpression) {
+    return false;
+  }
+  const callEx = node as ts.CallExpression;
+  if (callEx.expression.kind !== ts.SyntaxKind.Identifier) {
+    return false;
+  }
+  const id = callEx.expression as ts.Identifier;
+  return identifierIsMetadata(id, ngMetadata, checker);
+}
 
 function collectDeepNodes<T>(node: ts.Node, kind: ts.SyntaxKind): T[] {
   let nodes: T[] = [];
@@ -47,6 +135,33 @@ function findAngularMetadataImports(node: ts.Node): ts.ImportSpecifier[] {
     }
   });
   return specs;
+}
+
+function findDecorateFunction(node: ts.Node): ts.VariableDeclaration {
+  let decl: ts.VariableDeclaration = null;
+  ts.forEachChild(node, child => {
+    if (child.kind !== ts.SyntaxKind.VariableStatement) {
+      return;
+    }
+    collectDeepNodes<ts.VariableDeclaration>(child, ts.SyntaxKind.VariableDeclaration).forEach(declChild => {
+      if (declChild.name.kind !== ts.SyntaxKind.Identifier) {
+        return;
+      }
+      if ((declChild.name as ts.Identifier).text === '___decorate' &&
+          collectDeepNodes<ts.PropertyAccessExpression>(declChild, ts.SyntaxKind.PropertyAccessExpression)
+            .some(isReflectDecorateMethod)) {
+        decl = declChild;
+      }
+    });
+  });
+  return decl;
+}
+
+function isReflectDecorateMethod(node: ts.PropertyAccessExpression): boolean {
+  if (node.expression.kind !== ts.SyntaxKind.Identifier || node.name.kind !== ts.SyntaxKind.Identifier) {
+    return false;
+  }
+  return (node.expression as ts.Identifier).text === 'Reflect' && (node.name as ts.Identifier).text === 'decorate';
 }
 
 function isAngularCoreImport(node: ts.ImportDeclaration): boolean {
@@ -92,18 +207,18 @@ function isDecoratorAssignmentExpression(exprStmt: ts.ExpressionStatement): bool
   return true;
 }
 
-function pickDecorationNodesToRemove(exprStmt: ts.ExpressionStatement, ngMetadata: ts.ImportSpecifier[]): ts.Node[] {
+function pickDecorationNodesToRemove(exprStmt: ts.ExpressionStatement, ngMetadata: ts.ImportSpecifier[], checker: ts.TypeChecker): ts.Node[] {
   const expr = expect<ts.BinaryExpression>(exprStmt.expression, ts.SyntaxKind.BinaryExpression);
   const literal = expect<ts.ArrayLiteralExpression>(expr.right, ts.SyntaxKind.ArrayLiteralExpression);
   if (!literal.elements.every(elem => elem.kind === ts.SyntaxKind.ObjectLiteralExpression)) {
     return [];
   }
   const elements = literal.elements as ts.Node[] as ts.ObjectLiteralExpression[];
-  const ngDecorators = elements.filter(elem => isAngularDecorator(elem, ngMetadata));
+  const ngDecorators = elements.filter(elem => isAngularDecorator(elem, ngMetadata, checker));
   return (elements.length > ngDecorators.length) ? ngDecorators : [exprStmt];
 }
 
-function isAngularDecorator(literal: ts.ObjectLiteralExpression, ngMetadata: ts.ImportSpecifier[]): boolean {
+function isAngularDecorator(literal: ts.ObjectLiteralExpression, ngMetadata: ts.ImportSpecifier[], checker: ts.TypeChecker): boolean {
   const types = literal.properties.filter(isTypeProperty);
   if (types.length !== 1) {
     return false;
@@ -113,7 +228,7 @@ function isAngularDecorator(literal: ts.ObjectLiteralExpression, ngMetadata: ts.
     return false;
   }
   const id = assign.initializer as ts.Identifier;
-  return identifierIsMetadata(id, ngMetadata);
+  return identifierIsMetadata(id, ngMetadata, checker);
 }
 
 function isTypeProperty(prop: ts.ObjectLiteralElement): boolean {
@@ -128,7 +243,7 @@ function isTypeProperty(prop: ts.ObjectLiteralElement): boolean {
   return name.text === 'type';
 }
 
-function identifierIsMetadata(id: ts.Identifier, metadata: ts.ImportSpecifier[]): boolean {
+function identifierIsMetadata(id: ts.Identifier, metadata: ts.ImportSpecifier[], checker: ts.TypeChecker): boolean {
   const symbol = checker.getSymbolAtLocation(id);
   if (!symbol || !symbol.declarations || !symbol.declarations.length) {
     return false;
@@ -139,17 +254,16 @@ function identifierIsMetadata(id: ts.Identifier, metadata: ts.ImportSpecifier[])
     .some(spec => metadata.indexOf(spec as ts.ImportSpecifier) !== -1);
 }
 
-const ngMetadata = findAngularMetadataImports(source);
+function nodeIsDecorate(node: ts.Node, decorate: ts.VariableDeclaration, checker: ts.TypeChecker): boolean {
+  const symbol = checker.getSymbolAtLocation(node);
+  if (!symbol || !symbol.declarations || !symbol.declarations.length) {
+    return false;
+  }
+  return symbol
+    .declarations
+    .some(spec => spec == decorate);
+}
 
-let nodes: ts.Node[] = [];
-ts.forEachChild(source, node => {
-  if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
-    return;
-  }
-  if (isDecoratorAssignmentExpression(node as ts.ExpressionStatement)) {
-    nodes.push(...pickDecorationNodesToRemove(node as ts.ExpressionStatement, ngMetadata));
-  }
-});
 
 function repeatSpace(count: number) {
   let space = '';
@@ -161,13 +275,7 @@ function repeatSpace(count: number) {
 
 function replaceSubstr(initial: string, begin: number, end: number): string {
   const before = initial.substring(0, begin);
-  const after = initial.substring(end + 1);
-
-  return before + repeatSpace(end - begin) + '\n' + after;
+  const piece = initial.substring(begin, end);
+  const after = initial.substring(end);
+  return before + piece.replace(/[^ \t\r\n]/g, ' ') + after;
 }
-
-nodes.forEach(node => {
-  contents = replaceSubstr(contents, node.getStart(), node.getEnd());
-});
-
-process.stdout.write(contents);

@@ -5,9 +5,10 @@
     "target": "es5",
     "types": [
       "node"
-    ]
+    ],
+    "outDir": "dist"
   },
-  "exclude": [
-    "node_modules"
+  "files": [
+    "src/index.ts"
   ]
 }
