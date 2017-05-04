@@ -1,14 +1,16 @@
 {
   "name": "ngo-loader",
   "version": "0.0.1",
-  "main": "index.js",
+  "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "node_modules/.bin/tsc && cp package.json dist/"
+    "build": "rm -rf dist/ && node_modules/.bin/tsc"
+  },
+  "dependencies": {
+    "typescript": "2.1"
   },
   "devDependencies": {
     "@types/node": "^7.0.5",
-    "ts-node": "^2.1.0",
-    "typescript": "2.1"
+    "ts-node": "^2.1.0"
   }
 }
