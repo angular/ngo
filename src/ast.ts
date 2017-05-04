@@ -21,5 +21,4 @@ function printHelper(node: ts.Node, level: string) {
   ts.forEachChild(node, (node) => printHelper(node, level + ' '));
 }
 
-
 ts.forEachChild(source, (node) => printHelper(node, ''));
