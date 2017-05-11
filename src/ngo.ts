@@ -9,11 +9,22 @@ const PLATFORM_WHITELIST = [
 ];
 
 const ANGULAR_SPECIFIERS = [
+  // Class level decorators.
   'Component',
   'Directive',
   'Injectable',
   'NgModule',
   'Pipe',
+
+  // Property level decorators.
+  'ContentChild',
+  'ContentChildren',
+  'HostBinding',
+  'HostListener',
+  'Input',
+  'Output',
+  'ViewChild',
+  'ViewChildren',
 ];
 
 export function scrubFile(file: string, name: string): string {
@@ -36,10 +47,14 @@ export function scrubFile(file: string, name: string): string {
     if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
       return;
     }
-    if (isDecoratorAssignmentExpression(node as ts.ExpressionStatement)) {
-      nodes.push(...pickDecorationNodesToRemove(node as ts.ExpressionStatement, ngMetadata, checker));
+    const exprStmt = node as ts.ExpressionStatement;
+    if (isDecoratorAssignmentExpression(exprStmt)) {
+      nodes.push(...pickDecorationNodesToRemove(exprStmt, ngMetadata, checker));
     }
-    if (isCtorParamsAssignmentExpression(node as ts.ExpressionStatement) && !isCtorParamsWhitelistedService(node as ts.ExpressionStatement)) {
+    if (isPropDecoratorAssignmentExpression(exprStmt)) {
+      nodes.push(...pickPropDecorationNodesToRemove(exprStmt, ngMetadata, checker));
+    }
+    if (isCtorParamsAssignmentExpression(exprStmt) && !isCtorParamsWhitelistedService(exprStmt)) {
       nodes.push(node);
     }
   });
@@ -141,6 +156,28 @@ function expect<T extends ts.Node>(node: ts.Node, kind: ts.SyntaxKind): T {
   return node as T;
 }
 
+function lookup(node: ts.ObjectLiteralExpression, key: string): ts.Node {
+  return node
+    .properties
+    .reduce((result, prop) => {
+      if (result !== null) {
+        return result;
+      }
+      if (prop.kind !== ts.SyntaxKind.PropertyAssignment) {
+        return null;
+      }
+      const assign = prop as ts.PropertyAssignment;
+      if (assign.name.kind !== ts.SyntaxKind.StringLiteral) {
+        return null;
+      }
+      const lit = assign.name as ts.StringLiteral;
+      if (lit.text !== key) {
+        return null;
+      }
+      return assign.initializer;
+    }, null as ts.Node);
+}
+
 function findAngularMetadata(node: ts.Node): ts.Node[] {
   let specs: ts.Node[] = [];
   ts.forEachChild(node, (child) => {
@@ -240,6 +277,30 @@ function isDecoratorAssignmentExpression(exprStmt: ts.ExpressionStatement): bool
   return true;
 }
 
+function isPropDecoratorAssignmentExpression(exprStmt: ts.ExpressionStatement): boolean {
+  if (exprStmt.expression.kind !== ts.SyntaxKind.BinaryExpression) {
+    return false;
+  }
+  const expr = exprStmt.expression as ts.BinaryExpression;
+  if (expr.left.kind !== ts.SyntaxKind.PropertyAccessExpression) {
+    return false;
+  }
+  const propAccess = expr.left as ts.PropertyAccessExpression;
+  if (propAccess.expression.kind !== ts.SyntaxKind.Identifier) {
+    return false;
+  }
+  if (propAccess.name.text !== 'propDecorators') {
+    return false;
+  }
+  if (expr.operatorToken.kind !== ts.SyntaxKind.FirstAssignment) {
+    return false;
+  }
+  if (expr.right.kind !== ts.SyntaxKind.ObjectLiteralExpression) {
+    return false;
+  }
+  return true;
+}
+
 function isCtorParamsAssignmentExpression(exprStmt: ts.ExpressionStatement): boolean {
   if (exprStmt.expression.kind !== ts.SyntaxKind.BinaryExpression) {
     return false;
@@ -280,6 +341,42 @@ function pickDecorationNodesToRemove(exprStmt: ts.ExpressionStatement, ngMetadat
   const elements = literal.elements as ts.Node[] as ts.ObjectLiteralExpression[];
   const ngDecorators = elements.filter(elem => isAngularDecorator(elem, ngMetadata, checker));
   return (elements.length > ngDecorators.length) ? ngDecorators : [exprStmt];
+}
+
+function pickPropDecorationNodesToRemove(exprStmt: ts.ExpressionStatement, ngMetadata: ts.Node[], checker: ts.TypeChecker): ts.Node[] {
+  const expr = expect<ts.BinaryExpression>(exprStmt.expression, ts.SyntaxKind.BinaryExpression);
+  const literal = expect<ts.ObjectLiteralExpression>(expr.right, ts.SyntaxKind.ObjectLiteralExpression);
+  if (!literal.properties.every(elem => elem.kind === ts.SyntaxKind.PropertyAssignment &&
+      (elem as ts.PropertyAssignment).initializer.kind === ts.SyntaxKind.ArrayLiteralExpression)) {
+    return [];
+  }
+  const assignments = literal.properties as ts.Node[] as ts.PropertyAssignment[];
+  // Consider each assignment individually. Either the whole assignment will be removed or
+  // a particular decorator within will.
+  const toRemove = assignments
+    .map(assign => {
+      const decorators = expect<ts.ArrayLiteralExpression>(assign.initializer, ts.SyntaxKind.ArrayLiteralExpression).elements;
+      if (!decorators.every(el => el.kind === ts.SyntaxKind.ObjectLiteralExpression)) {
+        return [];
+      }
+      const decsToRemove = decorators.filter(expr => {
+        const lit = expect<ts.ObjectLiteralExpression>(expr, ts.SyntaxKind.ObjectLiteralExpression);
+        return isAngularDecorator(lit, ngMetadata, checker);
+      });
+      if (decsToRemove.length === decorators.length) {
+        return [assign];
+      }
+      return decsToRemove;
+    })
+    .reduce((accum, toRemove) => accum.concat(toRemove), [] as ts.Node[]);
+  // If every node to be removed is a property assignment (full property's decorators) and
+  // all properties are accounted for, remove the whole assignment. Otherwise, remove the
+  // nodes which were marked as safe.
+  if (toRemove.length === assignments.length &&
+      toRemove.every(node => node.kind === ts.SyntaxKind.PropertyAssignment)) {
+    return [exprStmt];
+  }
+  return toRemove;
 }
 
 function isAngularDecorator(literal: ts.ObjectLiteralExpression, ngMetadata: ts.Node[], checker: ts.TypeChecker): boolean {
