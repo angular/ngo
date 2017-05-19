@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import * as ts from 'typescript';
 
+import {expect, lookup} from './util';
+
 const PLATFORM_WHITELIST = [
   'PlatformRef_',
   'TestabilityRegistry',
@@ -147,35 +149,6 @@ function collectDeepNodes<T>(node: ts.Node, kind: ts.SyntaxKind): T[] {
 
 function nameOfSpecifier(node: ts.ImportSpecifier): string {
   return node.name && node.name.text || '<unknown>';
-}
-
-function expect<T extends ts.Node>(node: ts.Node, kind: ts.SyntaxKind): T {
-  if (node.kind !== kind) {
-    throw 'Invalid!';
-  }
-  return node as T;
-}
-
-function lookup(node: ts.ObjectLiteralExpression, key: string): ts.Node {
-  return node
-    .properties
-    .reduce((result, prop) => {
-      if (result !== null) {
-        return result;
-      }
-      if (prop.kind !== ts.SyntaxKind.PropertyAssignment) {
-        return null;
-      }
-      const assign = prop as ts.PropertyAssignment;
-      if (assign.name.kind !== ts.SyntaxKind.StringLiteral) {
-        return null;
-      }
-      const lit = assign.name as ts.StringLiteral;
-      if (lit.text !== key) {
-        return null;
-      }
-      return assign.initializer;
-    }, null as ts.Node);
 }
 
 function findAngularMetadata(node: ts.Node): ts.Node[] {

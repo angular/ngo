@@ -1,6 +1,7 @@
 "use strict";
 var fs = require("fs");
 var ts = require("typescript");
+var util_1 = require("./util");
 var PLATFORM_WHITELIST = [
     'PlatformRef_',
     'TestabilityRegistry',
@@ -96,9 +97,9 @@ function isDecorationAssignment(node, decorate, checker) {
     return false;
 }
 function pickDecorateNodesToRemove(node, decorate, ngMetadata, checker) {
-    var binEx = expect(node.expression, ts.SyntaxKind.BinaryExpression);
-    var callEx = expect(binEx.right, ts.SyntaxKind.CallExpression);
-    var metadata = expect(callEx.arguments[0], ts.SyntaxKind.ArrayLiteralExpression);
+    var binEx = util_1.expect(node.expression, ts.SyntaxKind.BinaryExpression);
+    var callEx = util_1.expect(binEx.right, ts.SyntaxKind.CallExpression);
+    var metadata = util_1.expect(callEx.arguments[0], ts.SyntaxKind.ArrayLiteralExpression);
     return metadata.elements.filter(function (exp) {
         return isAngularDecoratorCall(exp, ngMetadata, checker);
     });
@@ -127,33 +128,6 @@ function collectDeepNodes(node, kind) {
 }
 function nameOfSpecifier(node) {
     return node.name && node.name.text || '<unknown>';
-}
-function expect(node, kind) {
-    if (node.kind !== kind) {
-        throw 'Invalid!';
-    }
-    return node;
-}
-function lookup(node, key) {
-    return node
-        .properties
-        .reduce(function (result, prop) {
-        if (result !== null) {
-            return result;
-        }
-        if (prop.kind !== ts.SyntaxKind.PropertyAssignment) {
-            return null;
-        }
-        var assign = prop;
-        if (assign.name.kind !== ts.SyntaxKind.StringLiteral) {
-            return null;
-        }
-        var lit = assign.name;
-        if (lit.text !== key) {
-            return null;
-        }
-        return assign.initializer;
-    }, null);
 }
 function findAngularMetadata(node) {
     var specs = [];
@@ -298,8 +272,8 @@ function isCtorParamsWhitelistedService(exprStmt) {
     return PLATFORM_WHITELIST.indexOf(serviceId.text) !== -1;
 }
 function pickDecorationNodesToRemove(exprStmt, ngMetadata, checker) {
-    var expr = expect(exprStmt.expression, ts.SyntaxKind.BinaryExpression);
-    var literal = expect(expr.right, ts.SyntaxKind.ArrayLiteralExpression);
+    var expr = util_1.expect(exprStmt.expression, ts.SyntaxKind.BinaryExpression);
+    var literal = util_1.expect(expr.right, ts.SyntaxKind.ArrayLiteralExpression);
     if (!literal.elements.every(function (elem) { return elem.kind === ts.SyntaxKind.ObjectLiteralExpression; })) {
         return [];
     }
@@ -308,8 +282,8 @@ function pickDecorationNodesToRemove(exprStmt, ngMetadata, checker) {
     return (elements.length > ngDecorators.length) ? ngDecorators : [exprStmt];
 }
 function pickPropDecorationNodesToRemove(exprStmt, ngMetadata, checker) {
-    var expr = expect(exprStmt.expression, ts.SyntaxKind.BinaryExpression);
-    var literal = expect(expr.right, ts.SyntaxKind.ObjectLiteralExpression);
+    var expr = util_1.expect(exprStmt.expression, ts.SyntaxKind.BinaryExpression);
+    var literal = util_1.expect(expr.right, ts.SyntaxKind.ObjectLiteralExpression);
     if (!literal.properties.every(function (elem) { return elem.kind === ts.SyntaxKind.PropertyAssignment &&
         elem.initializer.kind === ts.SyntaxKind.ArrayLiteralExpression; })) {
         return [];
@@ -319,12 +293,12 @@ function pickPropDecorationNodesToRemove(exprStmt, ngMetadata, checker) {
     // a particular decorator within will.
     var toRemove = assignments
         .map(function (assign) {
-        var decorators = expect(assign.initializer, ts.SyntaxKind.ArrayLiteralExpression).elements;
+        var decorators = util_1.expect(assign.initializer, ts.SyntaxKind.ArrayLiteralExpression).elements;
         if (!decorators.every(function (el) { return el.kind === ts.SyntaxKind.ObjectLiteralExpression; })) {
             return [];
         }
         var decsToRemove = decorators.filter(function (expr) {
-            var lit = expect(expr, ts.SyntaxKind.ObjectLiteralExpression);
+            var lit = util_1.expect(expr, ts.SyntaxKind.ObjectLiteralExpression);
             return isAngularDecorator(lit, ngMetadata, checker);
         });
         if (decsToRemove.length === decorators.length) {
@@ -347,7 +321,7 @@ function isAngularDecorator(literal, ngMetadata, checker) {
     if (types.length !== 1) {
         return false;
     }
-    var assign = expect(types[0], ts.SyntaxKind.PropertyAssignment);
+    var assign = util_1.expect(types[0], ts.SyntaxKind.PropertyAssignment);
     if (assign.initializer.kind !== ts.SyntaxKind.Identifier) {
         return false;
     }

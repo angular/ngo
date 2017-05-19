@@ -1,5 +1,6 @@
 "use strict";
 var ngo_1 = require("./ngo");
+var class_fold_1 = require("./class-fold");
 var tmp = require('tmp');
 var fs = require('fs');
 var HAS_DECORATORS = /decorators/;
@@ -9,7 +10,8 @@ module.exports = function (content) {
         var tmpFile = tmp.fileSync({ postfix: '.js' }).name;
         console.log('temp file', this.request, tmpFile);
         fs.writeFileSync(tmpFile, content);
-        return ngo_1.scrubFile(tmpFile, this.request);
+        fs.writeFileSync(tmpFile, ngo_1.scrubFile(tmpFile, this.request));
+        return class_fold_1.foldFile(tmpFile, this.request);
     }
     return content;
 };
