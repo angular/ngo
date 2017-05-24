@@ -4,7 +4,9 @@
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf dist/ && node_modules/.bin/tsc"
+    "build": "rm -rf dist/ && tsc",
+    "pretest": "npm run build",
+    "test": "node dist/test.js input.js > res.js"
   },
   "dependencies": {
     "typescript": "2.1"
