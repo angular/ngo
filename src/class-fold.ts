@@ -24,9 +24,11 @@ export function foldFile(file: string, name: string): string {
   const source = program.getSourceFile(file);
   const checker = program.getTypeChecker();
 
+  // Get all class fold operations for this file.
   const ops = foldAllClasses(source, checker);
   console.error(`${name}: folding ${ops.length} ops`);
 
+  // Sort operations by position.
   ops.sort((a, b) => {
     if (a.pos < b.pos) {
       return 1;
@@ -39,6 +41,8 @@ export function foldFile(file: string, name: string): string {
 
   ops.forEach(op => {
     const prefix = contents.substring(0, op.pos);
+    // This works because the amount of text inserted is always equal to the removed.
+    // Otherwise, the positions would affect each other.
     switch (op.op) {
       case 'insert':
         const suffix = contents.substring(op.pos);
@@ -56,6 +60,7 @@ export function foldFile(file: string, name: string): string {
 
 export function foldAllClasses(node: ts.Node, checker: ts.TypeChecker): OpDesc[] {
   const classes: ClassData[] = [];
+  // Find all class declarations, build a ClassData for each.
   ts.forEachChild(node, child => {
     if (child.kind !== ts.SyntaxKind.VariableStatement) {
       return;
