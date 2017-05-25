@@ -3,19 +3,17 @@ import * as fs from 'fs';
 
 import { scrubFile } from './ngo';
 
-
-function repeatSpace(count: number) {
-  let space = '';
-  for (let i = 0; i < count; i++) {
-    space += ' ';
-  }
-  return space;
+const spaceReplacer = (match) => match.replace(/[^ \t\r\n]/g, ' ');
+const scrubFileContents = (content) => {
+  const filePath = tmp.fileSync({ postfix: '.js' }).name;
+  fs.writeFileSync(filePath, content);
+  return scrubFile(filePath, 'spec');
 }
 
 describe('ngo', () => {
-  describe('decorators', () => {
-    const clazz = 'var Clazz = (function () { function Clazz() { } return Clazz; }());';
+  const clazz = 'var Clazz = (function () { function Clazz() { } return Clazz; }());';
 
+  describe('decorators', () => {
     it('replaces Angular decorators with spaces', () => {
       const decorators = 'Clazz.decorators = [ { type: Injectable } ];';
       const input = `
@@ -23,12 +21,9 @@ describe('ngo', () => {
         ${clazz}
         ${decorators}
       `;
-      const output = input.replace(decorators, repeatSpace(decorators.length));
+      const output = input.replace(decorators, spaceReplacer);
 
-      const tmpFile = tmp.fileSync({ postfix: '.js' }).name;
-      fs.writeFileSync(tmpFile, input);
-
-      expect(scrubFile(tmpFile, 'spec')).toEqual(output);
+      expect(scrubFileContents(input)).toEqual(output);
     });
 
     it('doesn\'t replace non Angular decorators', () => {
@@ -39,10 +34,7 @@ describe('ngo', () => {
         ${decorators}
       `;
 
-      const tmpFile = tmp.fileSync({ postfix: '.js' }).name;
-      fs.writeFileSync(tmpFile, input);
-
-      expect(scrubFile(tmpFile, 'spec')).toEqual(input);
+      expect(scrubFileContents(input)).toEqual(input);
     });
 
     it('leaves non-Angulars decorators in mixed arrays', () => {
@@ -54,12 +46,43 @@ describe('ngo', () => {
         ${clazz}
         ${decorators}
       `;
-      const output = input.replace(angularDecorator, repeatSpace(angularDecorator.length));
+      const output = input.replace(angularDecorator, spaceReplacer);
 
-      const tmpFile = tmp.fileSync({ postfix: '.js' }).name;
-      fs.writeFileSync(tmpFile, input);
+      expect(scrubFileContents(input)).toEqual(output);
+    });
+  });
 
-      expect(scrubFile(tmpFile, 'spec')).toEqual(output);
+  describe('ctorParameters', () => {
+    it('removes empty constructor parameters', () => {
+      const ctorParameters = 'Clazz.ctorParameters = function () { return []; };';
+      const input = `
+        ${clazz}
+        ${ctorParameters}
+      `;
+      const output = input.replace(ctorParameters, spaceReplacer);
+
+      expect(scrubFileContents(input)).toEqual(output);
+    });
+
+    it('removes non-empty constructor parameters', () => {
+      const ctorParameters = `Clazz.ctorParameters = function () { return [{type: Injector}]; };`;
+      const input = `
+        ${clazz}
+        ${ctorParameters}
+      `;
+      const output = input.replace(ctorParameters, spaceReplacer);
+
+      expect(scrubFileContents(input)).toEqual(output);
+    });
+
+    it('doesn\'t remove constructor parameters from whitelisted classes', () => {
+      const ctorParameters = 'PlatformRef_.ctorParameters = function () { return []; };';
+      const input = `
+        ${clazz.replace('Clazz', 'PlatformRef_')}
+        ${ctorParameters}
+      `;
+
+      expect(scrubFileContents(input)).toEqual(input);
     });
   });
 });
