@@ -26,7 +26,7 @@ export function foldFile(file: string, name: string): string {
 
   // Get all class fold operations for this file.
   const ops = foldAllClasses(source, checker);
-  console.error(`${name}: folding ${ops.length} ops`);
+  // console.error(`${name}: folding ${ops.length} ops`);
 
   // Sort operations by position.
   ops.sort((a, b) => {

@@ -79,7 +79,7 @@ export function scrubFile(file: string, name: string): string {
     ts.forEachChild(source, helper);
   }
 
-  console.log('LOG', name, `processed ${nodes.length} nodes`);
+  // console.log('LOG', name, `processed ${nodes.length} nodes`);
 
   nodes.forEach(node => {
     const commaOffset = (node as any)._comma ? 1 : 0;
