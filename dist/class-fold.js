@@ -12,7 +12,7 @@ function foldFile(file, name) {
     var checker = program.getTypeChecker();
     // Get all class fold operations for this file.
     var ops = foldAllClasses(source, checker);
-    console.error(name + ": folding " + ops.length + " ops");
+    // console.error(`${name}: folding ${ops.length} ops`);
     // Sort operations by position.
     ops.sort(function (a, b) {
         if (a.pos < b.pos) {

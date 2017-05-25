@@ -52,6 +52,50 @@ describe('ngo', () => {
     });
   });
 
+  describe('propDecorators', () => {
+    it('replaces Angular propDecorators with spaces', () => {
+      const propDecorators = 'Clazz.propDecorators = { \'ngIf\': [{ type: Input },] }';
+      const input = `
+        import { Input } from '@angular/core';
+        ${clazz}
+        ${propDecorators}
+      `;
+      const output = input.replace(propDecorators, spaceReplacer);
+
+      expect(scrubFileContents(input)).toEqual(output);
+    });
+
+    it('doesn\'t replace non Angular propDecorators', () => {
+      const propDecorators = 'Clazz.propDecorators = { \'ngIf\': [{ type: Input },] }';
+      const input = `
+        import { Input } from 'another-lib';
+        ${clazz}
+        ${propDecorators}
+      `;
+
+      expect(scrubFileContents(input)).toEqual(input);
+    });
+
+    it('leaves non-Angulars propDecorators in mixed arrays', () => {
+      const angularPropDecorator = '\'ngIf\': [{ type: Input },]';
+      const decorators = `
+        Clazz.propDecorators = {
+          ${angularPropDecorator}, 
+          \'notNgIf\': [{ type: NotInput },]
+        };
+      `;
+      const input = `
+        import { Input } from '@angular/core';
+        import { NotInput } from 'another-lib';
+        ${clazz}
+        ${decorators}
+      `;
+      const output = input.replace(angularPropDecorator, spaceReplacer);
+
+      expect(scrubFileContents(input)).toEqual(output);
+    });
+  });
+
   describe('ctorParameters', () => {
     it('removes empty constructor parameters', () => {
       const ctorParameters = 'Clazz.ctorParameters = function () { return []; };';

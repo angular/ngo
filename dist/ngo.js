@@ -69,7 +69,7 @@ function scrubFile(file, name) {
         };
         ts.forEachChild(source, helper_1);
     }
-    console.log('LOG', name, "processed " + nodes.length + " nodes");
+    // console.log('LOG', name, `processed ${nodes.length} nodes`);
     nodes.forEach(function (node) {
         var commaOffset = node._comma ? 1 : 0;
         contents = replaceSubstr(contents, node.getStart(), node.getEnd() + commaOffset);
