@@ -15,6 +15,7 @@ require('ts-node').register({ project: path.join(projectRoot, 'tsconfig.spec.jso
 // Create a Jasmine runner and configure it.
 const jasmine = new Jasmine({ projectBaseDir });
 jasmine.loadConfig({});
+jasmine.clearReporters();
 jasmine.addReporter(new SpecReporter({ spec: { displayPending: true } }));
 
 // Run the tests.
