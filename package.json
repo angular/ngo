@@ -8,6 +8,7 @@
     "test": "node ./scripts/run-spec.js"
   },
   "dependencies": {
+    "tmp": "0.0.31",
     "typescript": "^2.3.2"
   },
   "devDependencies": {
