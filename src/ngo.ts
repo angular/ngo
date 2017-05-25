@@ -3,6 +3,7 @@ import * as ts from 'typescript';
 
 import {expect, lookup} from './util';
 
+// Don't remove `ctorParameters` from these.
 const PLATFORM_WHITELIST = [
   'PlatformRef_',
   'TestabilityRegistry',
@@ -378,6 +379,7 @@ function isTypeProperty(prop: ts.ObjectLiteralElement): boolean {
   return name.text === 'type';
 }
 
+// Check if an identifier is part of the known Angular Metadata.
 function identifierIsMetadata(id: ts.Identifier, metadata: ts.Node[], checker: ts.TypeChecker): boolean {
   const symbol = checker.getSymbolAtLocation(id);
   if (!symbol || !symbol.declarations || !symbol.declarations.length) {
@@ -398,7 +400,7 @@ function nodeIsDecorate(node: ts.Node, decorate: ts.VariableDeclaration, checker
     .some(spec => spec == decorate);
 }
 
-
+// Isn't used, seems to have been replaced with regex in replaceSubstr.
 function repeatSpace(count: number) {
   let space = '';
   for (let i = 0; i < count; i++) {
@@ -407,6 +409,8 @@ function repeatSpace(count: number) {
   return space;
 }
 
+// Replaces the substr with all spaces, so size is the same.
+// \t\r\n are kept intact.
 function replaceSubstr(initial: string, begin: number, end: number): string {
   const before = initial.substring(0, begin);
   const piece = initial.substring(begin, end);

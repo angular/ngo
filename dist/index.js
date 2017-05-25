@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var ngo_1 = require("./ngo");
 var class_fold_1 = require("./class-fold");
 var tmp = require('tmp');

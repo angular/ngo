@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var ts = require("typescript");
 function expect(node, kind) {
     if (node.kind !== kind) {

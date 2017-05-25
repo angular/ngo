@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var ts = require("typescript");
 function foldFile(file, name) {
@@ -9,8 +10,10 @@ function foldFile(file, name) {
     var program = ts.createProgram([file], options);
     var source = program.getSourceFile(file);
     var checker = program.getTypeChecker();
+    // Get all class fold operations for this file.
     var ops = foldAllClasses(source, checker);
     console.error(name + ": folding " + ops.length + " ops");
+    // Sort operations by position.
     ops.sort(function (a, b) {
         if (a.pos < b.pos) {
             return 1;
@@ -24,6 +27,8 @@ function foldFile(file, name) {
     });
     ops.forEach(function (op) {
         var prefix = contents.substring(0, op.pos);
+        // This works because the amount of text inserted is always equal to the removed.
+        // Otherwise, the positions would affect each other.
         switch (op.op) {
             case 'insert':
                 var suffix = contents.substring(op.pos);
@@ -40,6 +45,7 @@ function foldFile(file, name) {
 exports.foldFile = foldFile;
 function foldAllClasses(node, checker) {
     var classes = [];
+    // Find all class declarations, build a ClassData for each.
     ts.forEachChild(node, function (child) {
         if (child.kind !== ts.SyntaxKind.VariableStatement) {
             return;

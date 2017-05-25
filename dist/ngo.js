@@ -1,7 +1,9 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var ts = require("typescript");
 var util_1 = require("./util");
+// Don't remove `ctorParameters` from these.
 var PLATFORM_WHITELIST = [
     'PlatformRef_',
     'TestabilityRegistry',
@@ -340,6 +342,7 @@ function isTypeProperty(prop) {
     var name = assignment.name;
     return name.text === 'type';
 }
+// Check if an identifier is part of the known Angular Metadata.
 function identifierIsMetadata(id, metadata, checker) {
     var symbol = checker.getSymbolAtLocation(id);
     if (!symbol || !symbol.declarations || !symbol.declarations.length) {
@@ -358,6 +361,7 @@ function nodeIsDecorate(node, decorate, checker) {
         .declarations
         .some(function (spec) { return spec == decorate; });
 }
+// Isn't used, seems to have been replaced with regex in replaceSubstr.
 function repeatSpace(count) {
     var space = '';
     for (var i = 0; i < count; i++) {
@@ -365,6 +369,8 @@ function repeatSpace(count) {
     }
     return space;
 }
+// Replaces the substr with all spaces, so size is the same.
+// \t\r\n are kept intact.
 function replaceSubstr(initial, begin, end) {
     var before = initial.substring(0, begin);
     var piece = initial.substring(begin, end);
