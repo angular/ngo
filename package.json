@@ -4,15 +4,17 @@
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf dist/ && tsc",
-    "pretest": "npm run build",
-    "test": "node dist/test.js input.js > res.js"
+    "build": "rm -rf dist/ && tsc -p tsconfig.lib.json",
+    "test": "node ./scripts/run-spec.js"
   },
   "dependencies": {
-    "typescript": "2.1"
+    "typescript": "^2.3.2"
   },
   "devDependencies": {
+    "@types/jasmine": "^2.5.47",
     "@types/node": "^7.0.5",
-    "ts-node": "^2.1.0"
+    "jasmine": "^2.6.0",
+    "jasmine-spec-reporter": "^4.1.0",
+    "ts-node": "^2.1.2"
   }
 }
