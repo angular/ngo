@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs = require("fs");
 var ts = require("typescript");
 var util_1 = require("./util");
 // Don't remove `ctorParameters` from these.
@@ -27,56 +26,59 @@ var ANGULAR_SPECIFIERS = [
     'ViewChild',
     'ViewChildren',
 ];
-function scrubFile(file, name) {
-    var contents = fs.readFileSync(file).toString();
-    var options = {
-        allowJs: true,
-    };
-    var program = ts.createProgram([file], options);
-    var source = program.getSourceFile(file);
+function getScrubFileTransformer(program) {
     var checker = program.getTypeChecker();
-    var ngMetadata = findAngularMetadata(source);
-    var decorate = findDecorateFunction(source);
-    var nodes = [];
-    ts.forEachChild(source, function (node) {
-        if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
-            return;
-        }
-        var exprStmt = node;
-        if (isDecoratorAssignmentExpression(exprStmt)) {
-            nodes.push.apply(nodes, pickDecorationNodesToRemove(exprStmt, ngMetadata, checker));
-        }
-        if (isPropDecoratorAssignmentExpression(exprStmt)) {
-            nodes.push.apply(nodes, pickPropDecorationNodesToRemove(exprStmt, ngMetadata, checker));
-        }
-        if (isCtorParamsAssignmentExpression(exprStmt) && !isCtorParamsWhitelistedService(exprStmt)) {
-            nodes.push(node);
-        }
-    });
-    if (!!decorate) {
-        var helper_1 = function (node) {
-            if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
-                ts.forEachChild(node, helper_1);
-                return;
+    var foldFileTransform = function (context) {
+        var transformer = function (sf) {
+            var ngMetadata = findAngularMetadata(sf);
+            var decorate = findDecorateFunction(sf);
+            var nodes = [];
+            ts.forEachChild(sf, function (node) {
+                if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
+                    return;
+                }
+                var exprStmt = node;
+                if (isDecoratorAssignmentExpression(exprStmt)) {
+                    nodes.push.apply(nodes, pickDecorationNodesToRemove(exprStmt, ngMetadata, checker));
+                }
+                if (isPropDecoratorAssignmentExpression(exprStmt)) {
+                    nodes.push.apply(nodes, pickPropDecorationNodesToRemove(exprStmt, ngMetadata, checker));
+                }
+                if (isCtorParamsAssignmentExpression(exprStmt) && !isCtorParamsWhitelistedService(exprStmt)) {
+                    nodes.push(node);
+                }
+            });
+            if (!!decorate) {
+                var helper_1 = function (node) {
+                    if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
+                        ts.forEachChild(node, helper_1);
+                        return;
+                    }
+                    if (isDecorationAssignment(node, decorate, checker)) {
+                        var decNodes = pickDecorateNodesToRemove(node, decorate, ngMetadata, checker);
+                        decNodes.forEach(function (decNode) { return decNode._comma = true; });
+                        nodes.push.apply(nodes, decNodes);
+                        return;
+                    }
+                    ts.forEachChild(node, helper_1);
+                };
+                ts.forEachChild(sf, helper_1);
             }
-            if (isDecorationAssignment(node, decorate, checker)) {
-                var decNodes = pickDecorateNodesToRemove(node, decorate, ngMetadata, checker);
-                decNodes.forEach(function (decNode) { return decNode._comma = true; });
-                nodes.push.apply(nodes, decNodes);
-                return;
-            }
-            ts.forEachChild(node, helper_1);
+            var visitor = function (node) {
+                // Check if node is a statement to be dropped.
+                if (nodes.find(function (n) { return n == node; })) {
+                    return null;
+                }
+                // Otherwise return node as is.
+                return ts.visitEachChild(node, visitor, context);
+            };
+            return ts.visitNode(sf, visitor);
         };
-        ts.forEachChild(source, helper_1);
-    }
-    // console.log('LOG', name, `processed ${nodes.length} nodes`);
-    nodes.forEach(function (node) {
-        var commaOffset = node._comma ? 1 : 0;
-        contents = replaceSubstr(contents, node.getStart(), node.getEnd() + commaOffset);
-    });
-    return contents;
+        return transformer;
+    };
+    return foldFileTransform;
 }
-exports.scrubFile = scrubFile;
+exports.getScrubFileTransformer = getScrubFileTransformer;
 function isDecorationAssignment(node, decorate, checker) {
     if (node.expression.kind !== ts.SyntaxKind.BinaryExpression) {
         return false;

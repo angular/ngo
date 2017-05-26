@@ -1,49 +1,42 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs = require("fs");
 var ts = require("typescript");
-function foldFile(file, name) {
-    var contents = fs.readFileSync(file).toString();
-    var options = {
-        allowJs: true,
-    };
-    var program = ts.createProgram([file], options);
-    var source = program.getSourceFile(file);
+function getFoldFileTransformer(program) {
     var checker = program.getTypeChecker();
-    // Get all class fold operations for this file.
-    var ops = foldAllClasses(source, checker);
-    // console.error(`${name}: folding ${ops.length} ops`);
-    // Sort operations by position.
-    ops.sort(function (a, b) {
-        if (a.pos < b.pos) {
-            return 1;
-        }
-        else if (a.pos === b.pos) {
-            return 0;
-        }
-        else {
-            return -1;
-        }
-    });
-    ops.forEach(function (op) {
-        var prefix = contents.substring(0, op.pos);
-        // This works because the amount of text inserted is always equal to the removed.
-        // Otherwise, the positions would affect each other.
-        switch (op.op) {
-            case 'insert':
-                var suffix = contents.substring(op.pos);
-                contents = prefix + op.text + suffix;
-                break;
-            case 'remove':
-                var remainder = contents.substring(op.pos + op.text.length);
-                contents = prefix + remainder;
-                break;
-        }
-    });
-    return contents;
+    var foldFileTransform = function (context) {
+        var transformer = function (sf) {
+            var classes = findClassDeclarations(sf);
+            var statements = findClassStaticPropertyAssignments(sf, checker, classes);
+            var visitor = function (node) {
+                // Check if node is a statement to be dropped.
+                if (statements.find(function (st) { return st.expressionStatement == node; })) {
+                    return null;
+                }
+                // Check if node is a class to add statements to.
+                var clazz = classes.find(function (cl) { return cl.classFunction == node; });
+                if (clazz) {
+                    var functionExpression = node;
+                    var newExpressions = clazz.statements.map(function (st) {
+                        return ts.createStatement(st.expressionStatement.expression);
+                    });
+                    // Create a new body with all the original statements, plus new ones, 
+                    // plus return statement.
+                    var newBody = ts.createBlock(functionExpression.body.statements.slice(0, -1).concat(newExpressions, functionExpression.body.statements.slice(-1)));
+                    var newNode = ts.createFunctionExpression(functionExpression.modifiers, functionExpression.asteriskToken, functionExpression.name, functionExpression.typeParameters, functionExpression.parameters, functionExpression.type, newBody);
+                    // Replace node with modified one.
+                    return ts.visitEachChild(newNode, visitor, context);
+                }
+                // Otherwise return node as is.
+                return ts.visitEachChild(node, visitor, context);
+            };
+            return ts.visitNode(sf, visitor);
+        };
+        return transformer;
+    };
+    return foldFileTransform;
 }
-exports.foldFile = foldFile;
-function foldAllClasses(node, checker) {
+exports.getFoldFileTransformer = getFoldFileTransformer;
+function findClassDeclarations(node) {
     var classes = [];
     // Find all class declarations, build a ClassData for each.
     ts.forEachChild(node, function (child) {
@@ -91,20 +84,24 @@ function foldAllClasses(node, checker) {
         classes.push({
             name: name,
             class: varDecl,
-            return: retStmt,
+            classFunction: fn,
+            statements: []
         });
     });
-    var ops = [];
-    // Now find each assignment outside of the declaration. 
+    return classes;
+}
+function findClassStaticPropertyAssignments(node, checker, classes) {
+    var statements = [];
+    // Find each assignment outside of the declaration. 
     ts.forEachChild(node, function (child) {
         if (child.kind !== ts.SyntaxKind.ExpressionStatement) {
             return;
         }
-        var exprStmt = child;
-        if (exprStmt.expression.kind !== ts.SyntaxKind.BinaryExpression) {
+        var expressionStatement = child;
+        if (expressionStatement.expression.kind !== ts.SyntaxKind.BinaryExpression) {
             return;
         }
-        var binEx = exprStmt.expression;
+        var binEx = expressionStatement.expression;
         if (binEx.left.kind !== ts.SyntaxKind.PropertyAccessExpression) {
             return;
         }
@@ -120,19 +117,10 @@ function foldAllClasses(node, checker) {
         if (classIdx === -1) {
             return;
         }
-        var clazz = classes[classIdx];
-        var text = child.getText();
-        ops.unshift({
-            op: 'insert',
-            pos: clazz.return.getStart(),
-            text: text,
-        });
-        ops.unshift({
-            op: 'remove',
-            pos: child.getStart(),
-            text: text,
-        });
+        var hostClass = classes[classIdx];
+        var statement = { expressionStatement: expressionStatement, hostClass: hostClass };
+        hostClass.statements.push(statement);
+        statements.push(statement);
     });
-    return ops;
+    return statements;
 }
-exports.foldAllClasses = foldAllClasses;

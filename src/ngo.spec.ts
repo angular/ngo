@@ -1,6 +1,6 @@
 import { oneLine } from 'common-tags';
 
-import { transformJavascript } from './spec-helpers';
+import { transformJavascript } from './util';
 import { getScrubFileTransformer } from './ngo';
 
 
@@ -18,7 +18,7 @@ describe('ngo', () => {
         Clazz.decorators = [ { type: Injectable } ];
       `;
 
-      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
       expect(oneLine`${transformedInput}`).toEqual(output);
     });
 
@@ -29,7 +29,7 @@ describe('ngo', () => {
         Clazz.decorators = [{ type: Injectable }];
       `;
 
-      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
       expect(oneLine`${transformedInput}`).toEqual(input);
     });
 
@@ -47,7 +47,7 @@ describe('ngo', () => {
         Clazz.decorators = [{ type: NotInjectable }];
       `;
 
-      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
       expect(oneLine`${transformedInput}`).toEqual(output);
     });
   });
@@ -63,7 +63,7 @@ describe('ngo', () => {
         Clazz.propDecorators = { 'ngIf': [{ type: Input }] }
       `;
 
-      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
       expect(oneLine`${transformedInput}`).toEqual(output);
     });
 
@@ -74,7 +74,7 @@ describe('ngo', () => {
         Clazz.propDecorators = { \'ngIf\': [{ type: Input }] };
       `;
 
-      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
       expect(oneLine`${transformedInput}`).toEqual(input);
     });
 
@@ -97,7 +97,7 @@ describe('ngo', () => {
         };
       `;
 
-      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
       expect(oneLine`${transformedInput}`).toEqual(output);
     });
   });
@@ -112,7 +112,7 @@ describe('ngo', () => {
         Clazz.ctorParameters = function () { return []; };
       `;
 
-      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
       expect(oneLine`${transformedInput}`).toEqual(output);
     });
 
@@ -126,7 +126,7 @@ describe('ngo', () => {
         Clazz.ctorParameters = function () { return [{type: Injector}]; };
       `;
 
-      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
       expect(oneLine`${transformedInput}`).toEqual(output);
     });
 
@@ -137,7 +137,7 @@ describe('ngo', () => {
         PlatformRef_.ctorParameters = function () { return []; };
       `;
 
-      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
       expect(oneLine`${transformedInput}`).toEqual(input);
     });
   });

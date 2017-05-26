@@ -1,6 +1,6 @@
 import { oneLine } from 'common-tags';
 
-import { transformJavascript } from './spec-helpers';
+import { transformJavascript } from './util';
 import { getFoldFileTransformer } from './class-fold';
 
 
@@ -16,7 +16,7 @@ describe('class-fold', () => {
       ${staticProperty} return Clazz; }());
     `;
 
-    const transformedInput = transformJavascript(input, getFoldFileTransformer);
+    const transformedInput = transformJavascript(input, [getFoldFileTransformer]);
     expect(oneLine`${transformedInput}`).toEqual(output);
   });
 
@@ -33,7 +33,7 @@ describe('class-fold', () => {
       ${staticProperty} ${anotherStaticProperty} return Clazz; }());
     `;
 
-    const transformedInput = transformJavascript(input, getFoldFileTransformer);
+    const transformedInput = transformJavascript(input, [getFoldFileTransformer]);
     expect(oneLine`${transformedInput}`).toEqual(output);
   });
 
