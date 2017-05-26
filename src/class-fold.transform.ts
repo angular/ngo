@@ -4,6 +4,7 @@ import * as ts from 'typescript';
 interface ClassData {
   name: string;
   class: ts.VariableDeclaration;
+  classFunction: ts.FunctionExpression;
   return: ts.ReturnStatement;
 }
 
@@ -15,7 +16,8 @@ interface Ops {
 interface OpDesc {
   op: 'insert' | 'remove';
   child: ts.Node;
-  insertBefore?: ts.Node;
+  exprStmt?: ts.ExpressionStatement;
+  hostClass?: ClassData;
   pos: number;
   text: string;
 }
@@ -23,21 +25,14 @@ interface OpDesc {
 export function getFoldFileTransformer(program: ts.Program): ts.TransformerFactory<ts.SourceFile> {
   const checker = program.getTypeChecker();
 
-  function foldFileTransform(context: ts.TransformationContext):
-    ts.Transformer<ts.SourceFile> {
+  const foldFileTransform = (context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
 
     const transformer: ts.Transformer<ts.SourceFile> = (sf: ts.SourceFile) => {
 
       const classes = findClassDeclarations(sf);
       const operations = findClassStaticPropertyAssignments(sf, checker, classes);
 
-      // console.log(classes)
-      // console.log('###ops')
-      // operations.insert.map(op => console.log(op.parent));
-      // console.log('###end ops')
-
       const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-        // console.log(node)
         // Check if node should be dropped.
         const removeOps = operations.remove.filter((op) => node == op.child);
         if (removeOps.length != 0) {
@@ -46,16 +41,33 @@ export function getFoldFileTransformer(program: ts.Program): ts.TransformerFacto
         }
 
         // Check if node should be added to.
-        const insertOps = operations.insert.filter((op) => node == op.insertBefore);
-        insertOps.forEach((op) => {
-          // console.log(node.parent.getText())
-          // console.log(node.getText())
-          // // const tmp = node.parent;
-          // // node.parent = op.child;
-          // // op.child.parent = tmp;
-          // console.log(node.parent.getChildren().map(n => n.getText()))
-          // ts.add
-        })
+        const insertOps = operations.insert.filter((op) => node == op.hostClass.classFunction);
+        if (insertOps.length > 0) {
+          const functionExpression = node as ts.FunctionExpression;
+
+          const newExpressions = insertOps.map((op) => ts.createStatement(op.exprStmt.expression));
+
+          // Create a new body with all the original statements, plus new ones, 
+          // plus return statement.
+          const newBody = ts.createBlock([
+            ...functionExpression.body.statements.slice(0, -1),
+            ...newExpressions,
+            ...functionExpression.body.statements.slice(-1),
+          ])
+
+          const newNode = ts.createFunctionExpression(
+            functionExpression.modifiers,
+            functionExpression.asteriskToken,
+            functionExpression.name,
+            functionExpression.typeParameters,
+            functionExpression.parameters,
+            functionExpression.type,
+            newBody
+          )
+
+          // Replace node with modified one.
+          return ts.visitEachChild(newNode, visitor, context);
+        }
 
         // Otherwise return node as is.
         return ts.visitEachChild(node, visitor, context);
@@ -116,6 +128,7 @@ function findClassDeclarations(node: ts.Node): ClassData[] {
     classes.push({
       name,
       class: varDecl,
+      classFunction: fn,
       return: retStmt,
     });
   });
@@ -159,14 +172,15 @@ function findClassStaticPropertyAssignments(node: ts.Node, checker: ts.TypeCheck
     }
     const clazz = classes[classIdx];
     const text = child.getText();
-    ops.insert.unshift({
+    ops.insert.push({
       op: 'insert',
       child,
-      insertBefore: clazz.return,
+      exprStmt,
+      hostClass: clazz,
       pos: clazz.return.getStart(),
       text,
     });
-    ops.remove.unshift({
+    ops.remove.push({
       op: 'remove',
       child,
       pos: child.getStart(),

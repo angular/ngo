@@ -1,10 +1,6 @@
-import * as tmp from 'tmp';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as ts from 'typescript';
 import { stripIndent } from 'common-tags';
 
-import { foldFile } from './class-fold';
 import { getFoldFileTransformer } from './class-fold.transform';
 
 
@@ -75,34 +71,31 @@ const transformJavascript = (content, getTransform) => {
   return transformedContent;
 }
 
-
-
 describe('class-fold', () => {
   it('folds static properties into class', () => {
-    const staticProperty = 'Clazz.prop = 1;';
-    const input = `
-      var Clazz = (function () { function Clazz() { } return Clazz; }());
-      ${staticProperty}
-    `;
-    const output = `
-      var Clazz = (function () { function Clazz() { } ${staticProperty}return Clazz; }());
-      
-    `;
-
-    const tmpFile = tmp.fileSync({ postfix: '.js' }).name;
-    fs.writeFileSync(tmpFile, input);
-
-    expect(foldFile(tmpFile, 'spec')).toEqual(output);
-  });
-
-  fit('folds static properties into class [transform]', () => {
     const staticProperty = 'Clazz.prop = 1;';
     const input = stripIndent`
       var Clazz = (function () { function Clazz() { } return Clazz; }());
       ${staticProperty}
     `;
     const output = stripIndent`
-      var Clazz = (function () { function Clazz() { } ${staticProperty}return Clazz; }());
+      var Clazz = (function () { function Clazz() { } ${staticProperty} return Clazz; }());
+      
+    `;
+
+    expect(transformJavascript(input, getFoldFileTransformer).trim()).toEqual(output);
+  });
+
+  it('folds multiple static properties into class', () => {
+    const staticProperty = 'Clazz.prop = 1;';
+    const anotherStaticProperty = 'Clazz.anotherProp = 2;';
+    const input = stripIndent`
+      var Clazz = (function () { function Clazz() { } return Clazz; }());
+      ${staticProperty}
+      ${anotherStaticProperty}
+    `;
+    const output = stripIndent`
+      var Clazz = (function () { function Clazz() { } ${staticProperty} ${anotherStaticProperty} return Clazz; }());
       
     `;
 

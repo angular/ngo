@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "build": "rm -rf dist/ && tsc -p tsconfig.lib.json",
-    "test": "node ./scripts/run-spec.js"
+    "test": "node ./scripts/run-spec.js",
+    "debug": "node --inspect --debug-brk ./scripts/run-spec.js"
   },
   "dependencies": {
     "tmp": "0.0.31",
