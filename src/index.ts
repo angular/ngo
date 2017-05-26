@@ -1,6 +1,7 @@
 import * as ts from 'typescript';
 import {scrubFile} from './ngo';
 import {foldFile} from './class-fold';
+import {prefixFunctions} from './prefix-functions';
 const tmp = require('tmp');
 const fs = require('fs');
 
@@ -13,7 +14,8 @@ module.exports = function(content: string) {
     console.log('temp file', this.request, tmpFile);
     fs.writeFileSync(tmpFile, content);
     fs.writeFileSync(tmpFile, scrubFile(tmpFile, this.request));
-    return foldFile(tmpFile, this.request);
+    fs.writeFileSync(tmpFile, foldFile(tmpFile, this.request));
+    return prefixFunctions(tmpFile, this.request);
   }
   return content;
 }
