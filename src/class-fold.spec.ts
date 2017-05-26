@@ -5,9 +5,10 @@ import * as ts from 'typescript';
 import { stripIndent } from 'common-tags';
 
 import { foldFile } from './class-fold';
+import { getFoldFileTransformer } from './class-fold.transform';
 
 
-const transformJavascript = (content, beforeTransforms = [], afterTransforms = []) => {
+const transformJavascript = (content, getTransform) => {
   // Print error diagnostics.
   const checkDiagnostics = (diagnostics: ts.Diagnostic[]) => {
     if (diagnostics && diagnostics.length > 0) {
@@ -35,15 +36,20 @@ const transformJavascript = (content, beforeTransforms = [], afterTransforms = [
   const options: ts.CompilerOptions = {
     allowJs: true,
     newLine: ts.NewLineKind.LineFeed,
+    skipLibCheck: true,
     outDir
   };
 
   const compilerHost = ts.createCompilerHost(options);
   const program = ts.createProgram([tmpFile], options, compilerHost);
+  const checker = program.getTypeChecker();
+
+  // We need the checker inside the transform.
+  const transform = getTransform(program);
 
   const { emitSkipped, diagnostics } = program.emit(
     undefined, writeCallback, undefined, undefined,
-    { before: beforeTransforms, after: afterTransforms });
+    { before: [transform], after: [] });
   checkDiagnostics(diagnostics);
 
   const transformedContent = emittedFileContents[path.basename(tmpFile)];
@@ -75,7 +81,7 @@ describe('class-fold', () => {
     expect(foldFile(tmpFile, 'spec')).toEqual(output);
   });
 
-  it('folds static properties into class [transform]', () => {
+  fit('folds static properties into class [transform]', () => {
     const staticProperty = 'Clazz.prop = 1;';
     const input = stripIndent`
       var Clazz = (function () { function Clazz() { } return Clazz; }());
@@ -86,24 +92,6 @@ describe('class-fold', () => {
       
     `;
 
-    expect(transformJavascript(input, [transformer]).trim()).toEqual(input);
+    expect(transformJavascript(input, getFoldFileTransformer).trim()).toEqual(output);
   });
 });
-
-export function transformer(context: ts.TransformationContext):
-  ts.Transformer<ts.SourceFile> {
-  const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-    switch (node.kind) {
-      case ts.SyntaxKind.Decorator:
-        // drop on the floor;
-        return null as any;
-      default:
-        return ts.visitEachChild(node, visitor, context);
-    }
-  };
-
-  const transformer: ts.Transformer<ts.SourceFile> = (sf: ts.SourceFile) =>
-    ts.visitNode(sf, visitor);
-
-  return transformer;
-}
