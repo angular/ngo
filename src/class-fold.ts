@@ -4,61 +4,73 @@ import * as ts from 'typescript';
 interface ClassData {
   name: string;
   class: ts.VariableDeclaration;
-  return: ts.ReturnStatement;
+  classFunction: ts.FunctionExpression;
+  statements: StatementData[];
 }
 
-export interface OpDesc {
-  op: 'insert' | 'remove';
-  pos: number;
-  text: string;
+interface StatementData {
+  expressionStatement: ts.ExpressionStatement;
+  hostClass: ClassData;
 }
 
-export function foldFile(file: string, name: string): string {
-  let contents = fs.readFileSync(file).toString();
-
-  const options: ts.CompilerOptions = {
-    allowJs: true,
-  };
-
-  const program = ts.createProgram([file], options);
-  const source = program.getSourceFile(file);
+export function getFoldFileTransformer(program: ts.Program): ts.TransformerFactory<ts.SourceFile> {
   const checker = program.getTypeChecker();
 
-  // Get all class fold operations for this file.
-  const ops = foldAllClasses(source, checker);
-  // console.error(`${name}: folding ${ops.length} ops`);
+  const foldFileTransform = (context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
 
-  // Sort operations by position.
-  ops.sort((a, b) => {
-    if (a.pos < b.pos) {
-      return 1;
-    } else if (a.pos === b.pos) {
-      return 0;
-    } else {
-      return -1;
+    const transformer: ts.Transformer<ts.SourceFile> = (sf: ts.SourceFile) => {
+
+      const classes = findClassDeclarations(sf);
+      const statements = findClassStaticPropertyAssignments(sf, checker, classes);
+
+      const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
+        // Check if node is a statement to be dropped.
+        if (statements.find((st) => st.expressionStatement == node)) {
+          return null as any;
+        }
+
+        // Check if node is a class to add statements to.
+        const clazz = classes.find((cl) => cl.classFunction == node);
+        if (clazz) {
+          const functionExpression = node as ts.FunctionExpression;
+
+          const newExpressions = clazz.statements.map((st) =>
+            ts.createStatement(st.expressionStatement.expression));
+
+          // Create a new body with all the original statements, plus new ones, 
+          // plus return statement.
+          const newBody = ts.createBlock([
+            ...functionExpression.body.statements.slice(0, -1),
+            ...newExpressions,
+            ...functionExpression.body.statements.slice(-1),
+          ])
+
+          const newNode = ts.createFunctionExpression(
+            functionExpression.modifiers,
+            functionExpression.asteriskToken,
+            functionExpression.name,
+            functionExpression.typeParameters,
+            functionExpression.parameters,
+            functionExpression.type,
+            newBody
+          )
+
+          // Replace node with modified one.
+          return ts.visitEachChild(newNode, visitor, context);
+        }
+
+        // Otherwise return node as is.
+        return ts.visitEachChild(node, visitor, context);
+      };
+
+      return ts.visitNode(sf, visitor);
     }
-  });
-
-  ops.forEach(op => {
-    const prefix = contents.substring(0, op.pos);
-    // This works because the amount of text inserted is always equal to the removed.
-    // Otherwise, the positions would affect each other.
-    switch (op.op) {
-      case 'insert':
-        const suffix = contents.substring(op.pos);
-        contents = prefix + op.text + suffix;
-        break;
-      case 'remove':
-        const remainder = contents.substring(op.pos + op.text.length);
-        contents = prefix + remainder;
-        break;
-    }
-  });
-
-  return contents;
+    return transformer;
+  }
+  return foldFileTransform;
 }
 
-export function foldAllClasses(node: ts.Node, checker: ts.TypeChecker): OpDesc[] {
+function findClassDeclarations(node: ts.Node): ClassData[] {
   const classes: ClassData[] = [];
   // Find all class declarations, build a ClassData for each.
   ts.forEachChild(node, child => {
@@ -99,29 +111,36 @@ export function foldAllClasses(node: ts.Node, checker: ts.TypeChecker): OpDesc[]
     if (!innerFn.name || innerFn.name.kind !== ts.SyntaxKind.Identifier) {
       return;
     }
-    if ((innerFn.name as ts.Identifier).text !== name) {
+    if ((innerFn.name as ts.Identifier).text !== name) {
       return;
     }
     const retStmt = fn.body.statements[fn.body.statements.length - 1] as ts.ReturnStatement;
     classes.push({
       name,
       class: varDecl,
-      return: retStmt,
+      classFunction: fn,
+      statements: []
     });
   });
 
-  const ops = [] as OpDesc[];
+  return classes;
+}
 
-  // Now find each assignment outside of the declaration. 
+function findClassStaticPropertyAssignments(node: ts.Node, checker: ts.TypeChecker,
+  classes: ClassData[]): StatementData[] {
+
+  const statements: StatementData[] = [];
+
+  // Find each assignment outside of the declaration. 
   ts.forEachChild(node, child => {
     if (child.kind !== ts.SyntaxKind.ExpressionStatement) {
       return;
     }
-    const exprStmt = child as ts.ExpressionStatement;
-    if (exprStmt.expression.kind !== ts.SyntaxKind.BinaryExpression) {
+    const expressionStatement = child as ts.ExpressionStatement;
+    if (expressionStatement.expression.kind !== ts.SyntaxKind.BinaryExpression) {
       return;
     }
-    const binEx = exprStmt.expression as ts.BinaryExpression;
+    const binEx = expressionStatement.expression as ts.BinaryExpression;
     if (binEx.left.kind !== ts.SyntaxKind.PropertyAccessExpression) {
       return;
     }
@@ -129,6 +148,7 @@ export function foldAllClasses(node: ts.Node, checker: ts.TypeChecker): OpDesc[]
     if (propAccess.expression.kind !== ts.SyntaxKind.Identifier) {
       return;
     }
+
     const decls = checker.getSymbolAtLocation(propAccess.expression).declarations;
     if (decls.length !== 1) {
       return;
@@ -137,18 +157,11 @@ export function foldAllClasses(node: ts.Node, checker: ts.TypeChecker): OpDesc[]
     if (classIdx === -1) {
       return;
     }
-    const clazz = classes[classIdx];
-    const text = child.getText();
-    ops.unshift({
-      op: 'insert',
-      pos: clazz.return.getStart(),
-      text,
-    });
-    ops.unshift({
-      op: 'remove',
-      pos: child.getStart(),
-      text,
-    });
+    const hostClass = classes[classIdx];
+    const statement: StatementData = { expressionStatement, hostClass }
+
+    hostClass.statements.push(statement);
+    statements.push(statement);
   });
-  return ops;
+  return statements;
 }

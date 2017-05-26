@@ -1,7 +1,7 @@
 import { oneLine } from 'common-tags';
 
 import { transformJavascript } from './spec-helpers';
-import { getFoldFileTransformer } from './class-fold.transform';
+import { getFoldFileTransformer } from './class-fold';
 
 
 describe('class-fold', () => {
@@ -36,4 +36,6 @@ describe('class-fold', () => {
     const transformedInput = transformJavascript(input, getFoldFileTransformer);
     expect(oneLine`${transformedInput}`).toEqual(output);
   });
+
+  // TODO: add some tests for resilience to input.
 });
