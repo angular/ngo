@@ -20,39 +20,53 @@ const transformJavascript = (content, getTransform) => {
     }
   }
 
-  // TODO: find a way to not have to write content onto disk, use custom compilerHost.
-  const tmpFile = tmp.fileSync({ postfix: '.js' }).name;
-  fs.writeFileSync(tmpFile, content);
+  // Make a in-memory host and populate it with a single file
+  const fileMap = new Map<string, string>();
+  const sourcesMap = new Map<string, ts.SourceFile>();
+  const outputs = new Map<string, string>();
 
   // We're not actually writing anything to disk, but still need to define an outDir
   // because otherwise TS will fail to emit JS since it would overwrite the original.
-  const outDir = __dirname;
-  // Store file in memory instead of writing to disk.
-  const emittedFileContents = {};
-  const writeCallback: ts.WriteFileCallback = (fileName: string, data: string) => {
-    emittedFileContents[path.relative(outDir, fileName)] = data;
+  const tempOutDir = '$$_temp/';
+  const tempFilename = 'test.js';
+
+  fileMap.set(tempFilename, content);
+  fileMap.forEach((v, k) => sourcesMap.set(
+    k, ts.createSourceFile(k, v, ts.ScriptTarget.ES2015)));
+
+  const host: ts.CompilerHost = {
+    getSourceFile: (fileName) => sourcesMap.get(fileName)!,
+    getDefaultLibFileName: () => 'lib.d.ts',
+    getCurrentDirectory: () => '',
+    getDirectories: () => [],
+    getCanonicalFileName: (fileName) => fileName,
+    useCaseSensitiveFileNames: () => true,
+    getNewLine: () => '\n',
+    fileExists: (fileName) => fileMap.has(fileName),
+    readFile: (fileName) => fileMap.has(fileName) ? fileMap.get(fileName)! : '',
+    writeFile: (fileName, text) => outputs.set(fileName, text),
   };
 
   const options: ts.CompilerOptions = {
     allowJs: true,
     newLine: ts.NewLineKind.LineFeed,
     skipLibCheck: true,
-    outDir
+    outDir: '$$_temp/'
   };
 
   const compilerHost = ts.createCompilerHost(options);
-  const program = ts.createProgram([tmpFile], options, compilerHost);
-  const checker = program.getTypeChecker();
+  const program = ts.createProgram(Array.from(fileMap.keys()), options, host);
 
   // We need the checker inside the transform.
   const transform = getTransform(program);
 
   const { emitSkipped, diagnostics } = program.emit(
-    undefined, writeCallback, undefined, undefined,
+    undefined, host.writeFile, undefined, undefined,
     { before: [transform], after: [] });
+
   checkDiagnostics(diagnostics);
 
-  const transformedContent = emittedFileContents[path.basename(tmpFile)];
+  const transformedContent = outputs.get(tempOutDir + tempFilename);
 
   if (emitSkipped || !transformedContent) {
     throw new Error('TS compilation was not successfull.');
