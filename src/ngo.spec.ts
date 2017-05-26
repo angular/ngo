@@ -4,6 +4,8 @@ import { transformJavascript } from './util';
 import { getScrubFileTransformer } from './ngo';
 
 
+const transform = (content) => transformJavascript(content, [getScrubFileTransformer]).content;
+
 describe('ngo', () => {
   const clazz = 'var Clazz = (function () { function Clazz() { } return Clazz; }());';
 
@@ -18,8 +20,7 @@ describe('ngo', () => {
         Clazz.decorators = [ { type: Injectable } ];
       `;
 
-      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
-      expect(oneLine`${transformedInput}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(output);
     });
 
     it('doesn\'t remove non Angular decorators', () => {
@@ -29,8 +30,7 @@ describe('ngo', () => {
         Clazz.decorators = [{ type: Injectable }];
       `;
 
-      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
-      expect(oneLine`${transformedInput}`).toEqual(input);
+      expect(oneLine`${transform(input)}`).toEqual(input);
     });
 
     it('leaves non-Angulars decorators in mixed arrays', () => {
@@ -47,8 +47,7 @@ describe('ngo', () => {
         Clazz.decorators = [{ type: NotInjectable }];
       `;
 
-      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
-      expect(oneLine`${transformedInput}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(output);
     });
   });
 
@@ -63,8 +62,7 @@ describe('ngo', () => {
         Clazz.propDecorators = { 'ngIf': [{ type: Input }] }
       `;
 
-      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
-      expect(oneLine`${transformedInput}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(output);
     });
 
     it('doesn\'t remove non Angular propDecorators', () => {
@@ -74,8 +72,7 @@ describe('ngo', () => {
         Clazz.propDecorators = { \'ngIf\': [{ type: Input }] };
       `;
 
-      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
-      expect(oneLine`${transformedInput}`).toEqual(input);
+      expect(oneLine`${transform(input)}`).toEqual(input);
     });
 
     it('leaves non-Angulars propDecorators in mixed arrays', () => {
@@ -97,8 +94,7 @@ describe('ngo', () => {
         };
       `;
 
-      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
-      expect(oneLine`${transformedInput}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(output);
     });
   });
 
@@ -112,8 +108,7 @@ describe('ngo', () => {
         Clazz.ctorParameters = function () { return []; };
       `;
 
-      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
-      expect(oneLine`${transformedInput}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(output);
     });
 
     it('removes non-empty constructor parameters', () => {
@@ -126,8 +121,7 @@ describe('ngo', () => {
         Clazz.ctorParameters = function () { return [{type: Injector}]; };
       `;
 
-      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
-      expect(oneLine`${transformedInput}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(output);
     });
 
     it('doesn\'t remove constructor parameters from whitelisted classes', () => {
@@ -137,8 +131,7 @@ describe('ngo', () => {
         PlatformRef_.ctorParameters = function () { return []; };
       `;
 
-      const transformedInput = transformJavascript(input, [getScrubFileTransformer]);
-      expect(oneLine`${transformedInput}`).toEqual(input);
+      expect(oneLine`${transform(input)}`).toEqual(input);
     });
   });
 });

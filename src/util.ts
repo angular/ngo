@@ -1,7 +1,7 @@
 import * as ts from 'typescript';
 
 
-export const transformJavascript = (content, getTransforms) => {
+export const transformJavascript = (content, getTransforms, emitSourceMaps = false) => {
   // Print error diagnostics.
   const checkDiagnostics = (diagnostics: ts.Diagnostic[]) => {
     if (diagnostics && diagnostics.length > 0) {
@@ -47,7 +47,10 @@ export const transformJavascript = (content, getTransforms) => {
     // We target next so that there is no downleveling.
     target: ts.ScriptTarget.ESNext,
     skipLibCheck: true,
-    outDir: '$$_temp/'
+    outDir: '$$_temp/',
+    sourceMap: emitSourceMaps,
+    // TODO: figure out if these should be inline.
+    inlineSources: emitSourceMaps
   };
 
   const compilerHost = ts.createCompilerHost(options);
@@ -62,13 +65,16 @@ export const transformJavascript = (content, getTransforms) => {
 
   checkDiagnostics(diagnostics);
 
-  const transformedContent = outputs.get(tempOutDir + tempFilename);
+  const transformedContent = outputs.get(`${tempOutDir}${tempFilename}`);
 
   if (emitSkipped || !transformedContent) {
     throw new Error('TS compilation was not successfull.');
   }
 
-  return transformedContent;
+  return {
+    content: transformedContent,
+    sourceMap: emitSourceMaps ? outputs.get(`${tempOutDir}${tempFilename}.map`) : undefined
+  };
 }
 
 export function expect<T extends ts.Node>(node: ts.Node, kind: ts.SyntaxKind): T {

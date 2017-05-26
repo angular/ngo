@@ -9,7 +9,7 @@ const HAS_CTOR_PARAMETERS = /ctorParameters/;
 
 module.exports = function (content: string) {
   if (HAS_DECORATORS.test(content) || HAS_CTOR_PARAMETERS.test(content)) {
-    return transformJavascript(content, [getScrubFileTransformer, getFoldFileTransformer])
+    return transformJavascript(content, [getScrubFileTransformer, getFoldFileTransformer]).content;
   }
   return content;
 }

@@ -4,6 +4,8 @@ import { transformJavascript } from './util';
 import { getFoldFileTransformer } from './class-fold';
 
 
+const transform = (content) => transformJavascript(content, [getFoldFileTransformer]).content;
+
 describe('class-fold', () => {
   it('folds static properties into class', () => {
     const staticProperty = 'Clazz.prop = 1;';
@@ -16,8 +18,7 @@ describe('class-fold', () => {
       ${staticProperty} return Clazz; }());
     `;
 
-    const transformedInput = transformJavascript(input, [getFoldFileTransformer]);
-    expect(oneLine`${transformedInput}`).toEqual(output);
+    expect(oneLine`${transform(input)}`).toEqual(output);
   });
 
   it('folds multiple static properties into class', () => {
@@ -33,8 +34,7 @@ describe('class-fold', () => {
       ${staticProperty} ${anotherStaticProperty} return Clazz; }());
     `;
 
-    const transformedInput = transformJavascript(input, [getFoldFileTransformer]);
-    expect(oneLine`${transformedInput}`).toEqual(output);
+    expect(oneLine`${transform(input)}`).toEqual(output);
   });
 
   // TODO: add some tests for resilience to input.

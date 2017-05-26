@@ -7,7 +7,7 @@ var HAS_DECORATORS = /decorators/;
 var HAS_CTOR_PARAMETERS = /ctorParameters/;
 module.exports = function (content) {
     if (HAS_DECORATORS.test(content) || HAS_CTOR_PARAMETERS.test(content)) {
-        return util_1.transformJavascript(content, [ngo_1.getScrubFileTransformer, class_fold_1.getFoldFileTransformer]);
+        return util_1.transformJavascript(content, [ngo_1.getScrubFileTransformer, class_fold_1.getFoldFileTransformer]).content;
     }
     return content;
 };

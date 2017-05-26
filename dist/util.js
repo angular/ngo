@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var ts = require("typescript");
-exports.transformJavascript = function (content, getTransforms) {
+exports.transformJavascript = function (content, getTransforms, emitSourceMaps) {
+    if (emitSourceMaps === void 0) { emitSourceMaps = false; }
     // Print error diagnostics.
     var checkDiagnostics = function (diagnostics) {
         if (diagnostics && diagnostics.length > 0) {
@@ -41,7 +42,10 @@ exports.transformJavascript = function (content, getTransforms) {
         // We target next so that there is no downleveling.
         target: ts.ScriptTarget.ESNext,
         skipLibCheck: true,
-        outDir: '$$_temp/'
+        outDir: '$$_temp/',
+        sourceMap: emitSourceMaps,
+        // TODO: figure out if these should be inline.
+        inlineSources: emitSourceMaps
     };
     var compilerHost = ts.createCompilerHost(options);
     var program = ts.createProgram(Array.from(fileMap.keys()), options, host);
@@ -49,11 +53,14 @@ exports.transformJavascript = function (content, getTransforms) {
     var transforms = getTransforms.map(function (getTf) { return getTf(program); });
     var _a = program.emit(undefined, host.writeFile, undefined, undefined, { before: transforms, after: [] }), emitSkipped = _a.emitSkipped, diagnostics = _a.diagnostics;
     checkDiagnostics(diagnostics);
-    var transformedContent = outputs.get(tempOutDir + tempFilename);
+    var transformedContent = outputs.get("" + tempOutDir + tempFilename);
     if (emitSkipped || !transformedContent) {
         throw new Error('TS compilation was not successfull.');
     }
-    return transformedContent;
+    return {
+        content: transformedContent,
+        sourceMap: emitSourceMaps ? outputs.get("" + tempOutDir + tempFilename + ".map") : undefined
+    };
 };
 function expect(node, kind) {
     if (node.kind !== kind) {
