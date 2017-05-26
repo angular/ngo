@@ -1,7 +1,7 @@
 import { oneLine } from 'common-tags';
 
 import { transformJavascript } from './util';
-import { getScrubFileTransformer } from './ngo';
+import { getScrubFileTransformer } from './scrub-file';
 
 
 const transform = (content) => transformJavascript(content, [getScrubFileTransformer]).content;
