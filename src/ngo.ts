@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as ts from 'typescript';
 
-import {expect, lookup} from './util';
+import { expect, lookup } from './util';
 
 // Don't remove `ctorParameters` from these.
 const PLATFORM_WHITELIST = [
@@ -30,63 +30,65 @@ const ANGULAR_SPECIFIERS = [
   'ViewChildren',
 ];
 
-export function scrubFile(file: string, name: string): string {
-  let contents = fs.readFileSync(file).toString();
-
-  const options: ts.CompilerOptions = {
-    allowJs: true,
-  };
-
-  const program = ts.createProgram([file], options);
-  const source = program.getSourceFile(file);
-
+export function getScrubFileTransformer(program: ts.Program): ts.TransformerFactory<ts.SourceFile> {
   const checker = program.getTypeChecker();
 
-  const ngMetadata = findAngularMetadata(source);
-  const decorate = findDecorateFunction(source);
+  const foldFileTransform = (context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
 
-  let nodes: ts.Node[] = [];
-  ts.forEachChild(source, node => {
-    if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
-      return;
-    }
-    const exprStmt = node as ts.ExpressionStatement;
-    if (isDecoratorAssignmentExpression(exprStmt)) {
-      nodes.push(...pickDecorationNodesToRemove(exprStmt, ngMetadata, checker));
-    }
-    if (isPropDecoratorAssignmentExpression(exprStmt)) {
-      nodes.push(...pickPropDecorationNodesToRemove(exprStmt, ngMetadata, checker));
-    }
-    if (isCtorParamsAssignmentExpression(exprStmt) && !isCtorParamsWhitelistedService(exprStmt)) {
-      nodes.push(node);
-    }
-  });
+    const transformer: ts.Transformer<ts.SourceFile> = (sf: ts.SourceFile) => {
 
-  if (!!decorate) {
-    const helper = node => {
-      if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
-        ts.forEachChild(node, helper);
-        return;
+      const ngMetadata = findAngularMetadata(sf);
+      const decorate = findDecorateFunction(sf);
+
+      let nodes: ts.Node[] = [];
+      ts.forEachChild(sf, node => {
+        if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
+          return;
+        }
+        const exprStmt = node as ts.ExpressionStatement;
+        if (isDecoratorAssignmentExpression(exprStmt)) {
+          nodes.push(...pickDecorationNodesToRemove(exprStmt, ngMetadata, checker));
+        }
+        if (isPropDecoratorAssignmentExpression(exprStmt)) {
+          nodes.push(...pickPropDecorationNodesToRemove(exprStmt, ngMetadata, checker));
+        }
+        if (isCtorParamsAssignmentExpression(exprStmt) && !isCtorParamsWhitelistedService(exprStmt)) {
+          nodes.push(node);
+        }
+      });
+
+      if (!!decorate) {
+        const helper = node => {
+          if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
+            ts.forEachChild(node, helper);
+            return;
+          }
+          if (isDecorationAssignment(node as ts.ExpressionStatement, decorate, checker)) {
+            const decNodes = pickDecorateNodesToRemove(node as ts.ExpressionStatement, decorate, ngMetadata, checker);
+            decNodes.forEach((decNode: any) => decNode._comma = true);
+            nodes.push(...decNodes);
+            return;
+          }
+          ts.forEachChild(node, helper);
+        };
+        ts.forEachChild(sf, helper);
       }
-      if (isDecorationAssignment(node as ts.ExpressionStatement, decorate, checker)) {
-        const decNodes = pickDecorateNodesToRemove(node as ts.ExpressionStatement, decorate, ngMetadata, checker);
-        decNodes.forEach((decNode: any) => decNode._comma = true);
-        nodes.push(...decNodes);
-        return;
-      }
-      ts.forEachChild(node, helper);
-    };
-    ts.forEachChild(source, helper);
+
+      const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
+        // Check if node is a statement to be dropped.
+        if (nodes.find((n) => n == node)) {
+          return null as any;
+        }
+
+        // Otherwise return node as is.
+        return ts.visitEachChild(node, visitor, context);
+      };
+
+      return ts.visitNode(sf, visitor);
+    }
+    return transformer;
   }
-
-  // console.log('LOG', name, `processed ${nodes.length} nodes`);
-
-  nodes.forEach(node => {
-    const commaOffset = (node as any)._comma ? 1 : 0;
-    contents = replaceSubstr(contents, node.getStart(), node.getEnd() + commaOffset);
-  });
-
-  return contents;
+  return foldFileTransform;
 }
 
 function isDecorationAssignment(node: ts.ExpressionStatement, decorate: ts.VariableDeclaration, checker: ts.TypeChecker): boolean {
@@ -200,8 +202,8 @@ function findDecorateFunction(node: ts.Node): ts.VariableDeclaration {
         return;
       }
       if ((declChild.name as ts.Identifier).text === '___decorate' &&
-          collectDeepNodes<ts.PropertyAccessExpression>(declChild, ts.SyntaxKind.PropertyAccessExpression)
-            .some(isReflectDecorateMethod)) {
+        collectDeepNodes<ts.PropertyAccessExpression>(declChild, ts.SyntaxKind.PropertyAccessExpression)
+          .some(isReflectDecorateMethod)) {
         decl = declChild;
       }
     });
@@ -321,7 +323,7 @@ function pickPropDecorationNodesToRemove(exprStmt: ts.ExpressionStatement, ngMet
   const expr = expect<ts.BinaryExpression>(exprStmt.expression, ts.SyntaxKind.BinaryExpression);
   const literal = expect<ts.ObjectLiteralExpression>(expr.right, ts.SyntaxKind.ObjectLiteralExpression);
   if (!literal.properties.every(elem => elem.kind === ts.SyntaxKind.PropertyAssignment &&
-      (elem as ts.PropertyAssignment).initializer.kind === ts.SyntaxKind.ArrayLiteralExpression)) {
+    (elem as ts.PropertyAssignment).initializer.kind === ts.SyntaxKind.ArrayLiteralExpression)) {
     return [];
   }
   const assignments = literal.properties as ts.Node[] as ts.PropertyAssignment[];
@@ -347,7 +349,7 @@ function pickPropDecorationNodesToRemove(exprStmt: ts.ExpressionStatement, ngMet
   // all properties are accounted for, remove the whole assignment. Otherwise, remove the
   // nodes which were marked as safe.
   if (toRemove.length === assignments.length &&
-      toRemove.every(node => node.kind === ts.SyntaxKind.PropertyAssignment)) {
+    toRemove.every(node => node.kind === ts.SyntaxKind.PropertyAssignment)) {
     return [exprStmt];
   }
   return toRemove;

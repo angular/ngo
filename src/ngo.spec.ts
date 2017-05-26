@@ -1,132 +1,144 @@
-import * as tmp from 'tmp';
-import * as fs from 'fs';
+import { oneLine } from 'common-tags';
 
-import { scrubFile } from './ngo';
+import { transformJavascript } from './spec-helpers';
+import { getScrubFileTransformer } from './ngo';
 
-const spaceReplacer = (match) => match.replace(/[^ \t\r\n]/g, ' ');
-const scrubFileContents = (content) => {
-  const filePath = tmp.fileSync({ postfix: '.js' }).name;
-  fs.writeFileSync(filePath, content);
-  return scrubFile(filePath, 'spec');
-}
 
 describe('ngo', () => {
   const clazz = 'var Clazz = (function () { function Clazz() { } return Clazz; }());';
 
   describe('decorators', () => {
-    it('replaces Angular decorators with spaces', () => {
-      const decorators = 'Clazz.decorators = [ { type: Injectable } ];';
-      const input = `
+    it('removes Angular decorators', () => {
+      const output = oneLine`
         import { Injectable } from '@angular/core';
         ${clazz}
-        ${decorators}
       `;
-      const output = input.replace(decorators, spaceReplacer);
+      const input = oneLine`
+        ${output}
+        Clazz.decorators = [ { type: Injectable } ];
+      `;
 
-      expect(scrubFileContents(input)).toEqual(output);
+      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      expect(oneLine`${transformedInput}`).toEqual(output);
     });
 
-    it('doesn\'t replace non Angular decorators', () => {
-      const decorators = 'Clazz.decorators = [ { type: Injectable } ];';
-      const input = `
+    it('doesn\'t remove non Angular decorators', () => {
+      const input = oneLine`
         import { Injectable } from 'another-lib';
         ${clazz}
-        ${decorators}
+        Clazz.decorators = [{ type: Injectable }];
       `;
 
-      expect(scrubFileContents(input)).toEqual(input);
+      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      expect(oneLine`${transformedInput}`).toEqual(input);
     });
 
     it('leaves non-Angulars decorators in mixed arrays', () => {
-      const angularDecorator = '{ type: Injectable }';
-      const decorators = `Clazz.decorators = [ ${angularDecorator}, { type: NotInjectable } ];`;
-      const input = `
+      const input = oneLine`
         import { Injectable } from '@angular/core';
         import { NotInjectable } from 'another-lib';
         ${clazz}
-        ${decorators}
+        Clazz.decorators = [{ type: Injectable }, { type: NotInjectable }];
       `;
-      const output = input.replace(angularDecorator, spaceReplacer);
+      const output = oneLine`
+        import { Injectable } from '@angular/core';
+        import { NotInjectable } from 'another-lib';
+        ${clazz}
+        Clazz.decorators = [{ type: NotInjectable }];
+      `;
 
-      expect(scrubFileContents(input)).toEqual(output);
+      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      expect(oneLine`${transformedInput}`).toEqual(output);
     });
   });
 
   describe('propDecorators', () => {
-    it('replaces Angular propDecorators with spaces', () => {
-      const propDecorators = 'Clazz.propDecorators = { \'ngIf\': [{ type: Input },] }';
-      const input = `
+    it('removes Angular propDecorators', () => {
+      const output = oneLine`
         import { Input } from '@angular/core';
         ${clazz}
-        ${propDecorators}
       `;
-      const output = input.replace(propDecorators, spaceReplacer);
+      const input = oneLine`
+        ${output}
+        Clazz.propDecorators = { 'ngIf': [{ type: Input }] }
+      `;
 
-      expect(scrubFileContents(input)).toEqual(output);
+      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      expect(oneLine`${transformedInput}`).toEqual(output);
     });
 
-    it('doesn\'t replace non Angular propDecorators', () => {
-      const propDecorators = 'Clazz.propDecorators = { \'ngIf\': [{ type: Input },] }';
-      const input = `
+    it('doesn\'t remove non Angular propDecorators', () => {
+      const input = oneLine`
         import { Input } from 'another-lib';
         ${clazz}
-        ${propDecorators}
+        Clazz.propDecorators = { \'ngIf\': [{ type: Input }] };
       `;
 
-      expect(scrubFileContents(input)).toEqual(input);
+      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      expect(oneLine`${transformedInput}`).toEqual(input);
     });
 
     it('leaves non-Angulars propDecorators in mixed arrays', () => {
-      const angularPropDecorator = '\'ngIf\': [{ type: Input },]';
-      const decorators = `
-        Clazz.propDecorators = {
-          ${angularPropDecorator}, 
-          \'notNgIf\': [{ type: NotInput },]
-        };
-      `;
-      const input = `
+      const output = oneLine`
         import { Input } from '@angular/core';
         import { NotInput } from 'another-lib';
         ${clazz}
-        ${decorators}
+        Clazz.propDecorators = {
+          'notNgIf': [{ type: NotInput }]
+        };
       `;
-      const output = input.replace(angularPropDecorator, spaceReplacer);
+      const input = oneLine`
+        import { Input } from '@angular/core';
+        import { NotInput } from 'another-lib';
+        ${clazz}
+        Clazz.propDecorators = {
+          'ngIf': [{ type: Input }],
+          'notNgIf': [{ type: NotInput }]
+        };
+      `;
 
-      expect(scrubFileContents(input)).toEqual(output);
+      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      expect(oneLine`${transformedInput}`).toEqual(output);
     });
   });
 
   describe('ctorParameters', () => {
     it('removes empty constructor parameters', () => {
-      const ctorParameters = 'Clazz.ctorParameters = function () { return []; };';
-      const input = `
+      const output = oneLine`
         ${clazz}
-        ${ctorParameters}
       `;
-      const output = input.replace(ctorParameters, spaceReplacer);
+      const input = oneLine`
+        ${output}
+        Clazz.ctorParameters = function () { return []; };
+      `;
 
-      expect(scrubFileContents(input)).toEqual(output);
+      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      expect(oneLine`${transformedInput}`).toEqual(output);
     });
 
     it('removes non-empty constructor parameters', () => {
       const ctorParameters = `Clazz.ctorParameters = function () { return [{type: Injector}]; };`;
-      const input = `
+      const output = oneLine`
         ${clazz}
-        ${ctorParameters}
       `;
-      const output = input.replace(ctorParameters, spaceReplacer);
+      const input = oneLine`
+        ${clazz}
+        Clazz.ctorParameters = function () { return [{type: Injector}]; };
+      `;
 
-      expect(scrubFileContents(input)).toEqual(output);
+      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      expect(oneLine`${transformedInput}`).toEqual(output);
     });
 
     it('doesn\'t remove constructor parameters from whitelisted classes', () => {
       const ctorParameters = 'PlatformRef_.ctorParameters = function () { return []; };';
-      const input = `
+      const input = oneLine`
         ${clazz.replace('Clazz', 'PlatformRef_')}
-        ${ctorParameters}
+        PlatformRef_.ctorParameters = function () { return []; };
       `;
 
-      expect(scrubFileContents(input)).toEqual(input);
+      const transformedInput = transformJavascript(input, getScrubFileTransformer);
+      expect(oneLine`${transformedInput}`).toEqual(input);
     });
   });
 });

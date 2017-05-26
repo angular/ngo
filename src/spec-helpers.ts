@@ -43,6 +43,7 @@ export const transformJavascript = (content, getTransform) => {
   const options: ts.CompilerOptions = {
     allowJs: true,
     newLine: ts.NewLineKind.LineFeed,
+    target: ts.ScriptTarget.ESNext,
     skipLibCheck: true,
     outDir: '$$_temp/'
   };
