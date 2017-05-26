@@ -14,6 +14,7 @@
   "devDependencies": {
     "@types/jasmine": "^2.5.47",
     "@types/node": "^7.0.5",
+    "common-tags": "^1.4.0",
     "jasmine": "^2.6.0",
     "jasmine-spec-reporter": "^4.1.0",
     "ts-node": "^2.1.2"
