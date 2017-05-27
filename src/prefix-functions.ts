@@ -12,7 +12,7 @@ export function prefixFunctions(file: string, name: string): string {
   const source = program.getSourceFile(file);
   const PURE_STRING = '/*@__PURE__*/';
 
-  const topLevelPositions = findTopLevelFunctions(source, contents);
+  const topLevelPositions = findTopLevelFunctions(source);
   console.error(`${name}: prefixing ${topLevelPositions.length} top-level functions and new expressions`);
 
   // Starting from the latest positions so they aren't shifted down when pure is inserted
@@ -24,7 +24,7 @@ export function prefixFunctions(file: string, name: string): string {
   return contents;
 }
 
-export function findTopLevelFunctions(node: ts.Node, contents: string): number[] {
+export function findTopLevelFunctions(node: ts.Node): number[] {
   const topLevelPositions = [];
   ts.forEachChild(node, cb);
 
@@ -39,9 +39,7 @@ export function findTopLevelFunctions(node: ts.Node, contents: string): number[]
     // We need to check specially for IIFEs formatted as call expressions inside parenthesized
     // expressions: `(function() {}())` Their start pos doesn't include the opening paren
     // and must be adjusted.
-    if (node.kind === ts.SyntaxKind.CallExpression && !node.expression.text &&
-        previousNode.kind === ts.SyntaxKind.ParenthesizedExpression &&
-        node.expression.kind !== ts.SyntaxKind.PropertyAccessExpression) {
+    if (isIIFE(node) && previousNode.kind === ts.SyntaxKind.ParenthesizedExpression) {
       topLevelPositions.push(node.pos - 1);
     } else if (node.kind === ts.SyntaxKind.CallExpression ||
                node.kind === ts.SyntaxKind.NewExpression) {
@@ -52,5 +50,11 @@ export function findTopLevelFunctions(node: ts.Node, contents: string): number[]
     return ts.forEachChild(node, cb);
 
   }
+
+  function isIIFE(node: any): boolean {
+    return node.kind === ts.SyntaxKind.CallExpression && !node.expression.text &&
+           node.expression.kind !== ts.SyntaxKind.PropertyAccessExpression;
+  }
+
   return topLevelPositions;
 }
