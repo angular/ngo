@@ -8,6 +8,8 @@
     "noImplicitAny": true,
     "noUnusedParameters": true,
     "noUnusedLocals": true,
+    "sourceMap": true,
+    "inlineSources": true,
     "lib": [
       "es2015"
     ]
