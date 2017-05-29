@@ -1,7 +1,6 @@
-import * as fs from 'fs';
 import * as ts from 'typescript';
 
-import { expect, lookup } from './util';
+import { expect } from './util';
 
 
 // Don't remove `ctorParameters` from these.
@@ -59,13 +58,13 @@ export function getScrubFileTransformer(program: ts.Program): ts.TransformerFact
       });
 
       if (!!decorate) {
-        const helper = (node) => {
+        const helper = (node: ts.Node) => {
           if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
             ts.forEachChild(node, helper);
             return;
           }
           if (isDecorationAssignment(node as ts.ExpressionStatement, decorate, checker)) {
-            const decNodes = pickDecorateNodesToRemove(node as ts.ExpressionStatement, decorate, ngMetadata, checker);
+            const decNodes = pickDecorateNodesToRemove(node as ts.ExpressionStatement, ngMetadata, checker);
             decNodes.forEach((decNode: any) => decNode._comma = true);
             nodes.push(...decNodes);
             return;
@@ -121,7 +120,7 @@ function isDecorationAssignment(node: ts.ExpressionStatement, decorate: ts.Varia
   return false;
 }
 
-function pickDecorateNodesToRemove(node: ts.ExpressionStatement, decorate: ts.VariableDeclaration,
+function pickDecorateNodesToRemove(node: ts.ExpressionStatement,
   ngMetadata: ts.Node[], checker: ts.TypeChecker): ts.Node[] {
 
   const binEx = expect<ts.BinaryExpression>(node.expression, ts.SyntaxKind.BinaryExpression);
@@ -413,22 +412,4 @@ function nodeIsDecorate(node: ts.Node, decorate: ts.VariableDeclaration, checker
   return symbol
     .declarations
     .some((spec) => spec === decorate);
-}
-
-// Isn't used, seems to have been replaced with regex in replaceSubstr.
-function repeatSpace(count: number) {
-  let space = '';
-  for (let i = 0; i < count; i++) {
-    space += ' ';
-  }
-  return space;
-}
-
-// Replaces the substr with all spaces, so size is the same.
-// \t\r\n are kept intact.
-function replaceSubstr(initial: string, begin: number, end: number): string {
-  const before = initial.substring(0, begin);
-  const piece = initial.substring(begin, end);
-  const after = initial.substring(end);
-  return before + piece.replace(/[^ \t\r\n]/g, ' ') + after;
 }

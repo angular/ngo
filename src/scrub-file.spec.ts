@@ -4,7 +4,7 @@ import { getScrubFileTransformer } from './scrub-file';
 import { transformJavascript } from './util';
 
 
-const transform = (content) => transformJavascript(content, [getScrubFileTransformer]).content;
+const transform = (content: string) => transformJavascript(content, [getScrubFileTransformer]).content;
 
 describe('ngo', () => {
   const clazz = 'var Clazz = (function () { function Clazz() { } return Clazz; }());';
@@ -112,7 +112,6 @@ describe('ngo', () => {
     });
 
     it('removes non-empty constructor parameters', () => {
-      const ctorParameters = `Clazz.ctorParameters = function () { return [{type: Injector}]; };`;
       const output = oneLine`
         ${clazz}
       `;
@@ -125,7 +124,6 @@ describe('ngo', () => {
     });
 
     it('doesn\'t remove constructor parameters from whitelisted classes', () => {
-      const ctorParameters = 'PlatformRef_.ctorParameters = function () { return []; };';
       const input = oneLine`
         ${clazz.replace('Clazz', 'PlatformRef_')}
         PlatformRef_.ctorParameters = function () { return []; };

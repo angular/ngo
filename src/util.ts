@@ -1,7 +1,9 @@
 import * as ts from 'typescript';
 
 
-export const transformJavascript = (content, getTransforms, emitSourceMaps = false) => {
+export const transformJavascript = (content: string,
+  getTransforms: Array<(program: ts.Program) => ts.TransformerFactory<ts.SourceFile>>, emitSourceMaps = false) => {
+
   // Print error diagnostics.
   const checkDiagnostics = (diagnostics: ts.Diagnostic[]) => {
     if (diagnostics && diagnostics.length > 0) {
@@ -55,7 +57,6 @@ export const transformJavascript = (content, getTransforms, emitSourceMaps = fal
     inlineSources: emitSourceMaps,
   };
 
-  const compilerHost = ts.createCompilerHost(options);
   const program = ts.createProgram(Array.from(fileMap.keys()), options, host);
 
   // We need the checker inside transforms.
@@ -84,26 +85,4 @@ export function expect<T extends ts.Node>(node: ts.Node, kind: ts.SyntaxKind): T
     throw new Error('Invalid!');
   }
   return node as T;
-}
-
-export function lookup(node: ts.ObjectLiteralExpression, key: string): ts.Node {
-  return node
-    .properties
-    .reduce((result, prop) => {
-      if (result !== null) {
-        return result;
-      }
-      if (prop.kind !== ts.SyntaxKind.PropertyAssignment) {
-        return null;
-      }
-      const assign = prop as ts.PropertyAssignment;
-      if (assign.name.kind !== ts.SyntaxKind.StringLiteral) {
-        return null;
-      }
-      const lit = assign.name as ts.StringLiteral;
-      if (lit.text !== key) {
-        return null;
-      }
-      return assign.initializer;
-    }, null as ts.Node);
 }

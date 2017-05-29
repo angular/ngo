@@ -1,8 +1,7 @@
-import * as ts from 'typescript';
-
 import { getFoldFileTransformer } from './class-fold';
 import { getScrubFileTransformer } from './scrub-file';
 import { transformJavascript } from './util';
+
 
 const HAS_DECORATORS = /decorators/;
 const HAS_CTOR_PARAMETERS = /ctorParameters/;

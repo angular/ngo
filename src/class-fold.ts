@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import * as ts from 'typescript';
 
 interface ClassData {
@@ -114,7 +113,6 @@ function findClassDeclarations(node: ts.Node): ClassData[] {
     if ((innerFn.name as ts.Identifier).text !== name) {
       return;
     }
-    const retStmt = fn.body.statements[fn.body.statements.length - 1] as ts.ReturnStatement;
     classes.push({
       name,
       class: varDecl,

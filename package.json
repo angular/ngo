@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "rimraf dist/ && tsc -p tsconfig.lib.json",
+    "build": "rimraf dist/* && tsc -p tsconfig.lib.json",
     "test": "node ./scripts/run-spec.js",
     "debug": "node --inspect --debug-brk ./scripts/run-spec.js",
     "integration": "npm run build && npm run integration:webpack",
@@ -15,6 +15,7 @@
     "typescript": "^2.3.2"
   },
   "devDependencies": {
+    "@types/common-tags": "^1.2.5",
     "@types/jasmine": "^2.5.47",
     "@types/node": "^7.0.5",
     "common-tags": "^1.4.0",

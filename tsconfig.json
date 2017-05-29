@@ -4,6 +4,10 @@
     "moduleResolution": "node",
     "target": "es5",
     "outDir": "dist",
+    "noEmitOnError": true,
+    "noImplicitAny": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
     "lib": [
       "es2015"
     ]
