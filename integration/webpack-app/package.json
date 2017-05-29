@@ -9,7 +9,8 @@
     "pree2e": "npm run build",
     "e2e": "concurrently \"npm run serve\" \"npm run protractor\" --kill-others --success first",
     "preprotractor": "webdriver-manager update",
-    "protractor": "protractor protractor.config.js"
+    "protractor": "protractor protractor.config.js",
+    "benchmark": "npm run build && npm run build-no-ngo && node benchmark.js"
   },
   "dependencies": {
     "@angular/common": "^4.1.3",
