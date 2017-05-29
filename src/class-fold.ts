@@ -25,25 +25,25 @@ export function getFoldFileTransformer(program: ts.Program): ts.TransformerFacto
 
       const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
         // Check if node is a statement to be dropped.
-        if (statements.find((st) => st.expressionStatement == node)) {
+        if (statements.find((st) => st.expressionStatement === node)) {
           return null as any;
         }
 
         // Check if node is a class to add statements to.
-        const clazz = classes.find((cl) => cl.classFunction == node);
+        const clazz = classes.find((cl) => cl.classFunction === node);
         if (clazz) {
           const functionExpression = node as ts.FunctionExpression;
 
           const newExpressions = clazz.statements.map((st) =>
             ts.createStatement(st.expressionStatement.expression));
 
-          // Create a new body with all the original statements, plus new ones, 
+          // Create a new body with all the original statements, plus new ones,
           // plus return statement.
           const newBody = ts.createBlock([
             ...functionExpression.body.statements.slice(0, -1),
             ...newExpressions,
             ...functionExpression.body.statements.slice(-1),
-          ])
+          ]);
 
           const newNode = ts.createFunctionExpression(
             functionExpression.modifiers,
@@ -52,8 +52,8 @@ export function getFoldFileTransformer(program: ts.Program): ts.TransformerFacto
             functionExpression.typeParameters,
             functionExpression.parameters,
             functionExpression.type,
-            newBody
-          )
+            newBody,
+          );
 
           // Replace node with modified one.
           return ts.visitEachChild(newNode, visitor, context);
@@ -64,16 +64,16 @@ export function getFoldFileTransformer(program: ts.Program): ts.TransformerFacto
       };
 
       return ts.visitNode(sf, visitor);
-    }
+    };
     return transformer;
-  }
+  };
   return foldFileTransform;
 }
 
 function findClassDeclarations(node: ts.Node): ClassData[] {
   const classes: ClassData[] = [];
   // Find all class declarations, build a ClassData for each.
-  ts.forEachChild(node, child => {
+  ts.forEachChild(node, (child) => {
     if (child.kind !== ts.SyntaxKind.VariableStatement) {
       return;
     }
@@ -119,7 +119,7 @@ function findClassDeclarations(node: ts.Node): ClassData[] {
       name,
       class: varDecl,
       classFunction: fn,
-      statements: []
+      statements: [],
     });
   });
 
@@ -131,8 +131,8 @@ function findClassStaticPropertyAssignments(node: ts.Node, checker: ts.TypeCheck
 
   const statements: StatementData[] = [];
 
-  // Find each assignment outside of the declaration. 
-  ts.forEachChild(node, child => {
+  // Find each assignment outside of the declaration.
+  ts.forEachChild(node, (child) => {
     if (child.kind !== ts.SyntaxKind.ExpressionStatement) {
       return;
     }
@@ -153,12 +153,12 @@ function findClassStaticPropertyAssignments(node: ts.Node, checker: ts.TypeCheck
     if (decls.length !== 1) {
       return;
     }
-    const classIdx = classes.map(clazz => clazz.class).indexOf(decls[0] as ts.VariableDeclaration);
+    const classIdx = classes.map((clazz) => clazz.class).indexOf(decls[0] as ts.VariableDeclaration);
     if (classIdx === -1) {
       return;
     }
     const hostClass = classes[classIdx];
-    const statement: StatementData = { expressionStatement, hostClass }
+    const statement: StatementData = { expressionStatement, hostClass };
 
     hostClass.statements.push(statement);
     statements.push(statement);

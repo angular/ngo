@@ -1,7 +1,7 @@
 import { oneLine } from 'common-tags';
 
-import { transformJavascript } from './util';
 import { getFoldFileTransformer } from './class-fold';
+import { transformJavascript } from './util';
 
 
 const transform = (content) => transformJavascript(content, [getFoldFileTransformer]).content;
@@ -14,7 +14,7 @@ describe('class-fold', () => {
       ${staticProperty}
     `;
     const output = oneLine`
-      var Clazz = (function () { function Clazz() { } 
+      var Clazz = (function () { function Clazz() { }
       ${staticProperty} return Clazz; }());
     `;
 
@@ -30,7 +30,7 @@ describe('class-fold', () => {
       ${anotherStaticProperty}
     `;
     const output = oneLine`
-      var Clazz = (function () { function Clazz() { } 
+      var Clazz = (function () { function Clazz() { }
       ${staticProperty} ${anotherStaticProperty} return Clazz; }());
     `;
 

@@ -5,13 +5,15 @@ export const transformJavascript = (content, getTransforms, emitSourceMaps = fal
   // Print error diagnostics.
   const checkDiagnostics = (diagnostics: ts.Diagnostic[]) => {
     if (diagnostics && diagnostics.length > 0) {
-      console.error(ts.formatDiagnostics(diagnostics, {
+      let errors = '';
+      errors = errors + '\n' + ts.formatDiagnostics(diagnostics, {
         getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
         getNewLine: () => ts.sys.newLine,
-        getCanonicalFileName: (f: string) => f
-      }));
+        getCanonicalFileName: (f: string) => f,
+      });
+      throw new Error(errors);
     }
-  }
+  };
 
   // Make a in-memory host and populate it with a single file
   const fileMap = new Map<string, string>();
@@ -50,7 +52,7 @@ export const transformJavascript = (content, getTransforms, emitSourceMaps = fal
     outDir: '$$_temp/',
     sourceMap: emitSourceMaps,
     // TODO: figure out if these should be inline.
-    inlineSources: emitSourceMaps
+    inlineSources: emitSourceMaps,
   };
 
   const compilerHost = ts.createCompilerHost(options);
@@ -73,13 +75,13 @@ export const transformJavascript = (content, getTransforms, emitSourceMaps = fal
 
   return {
     content: transformedContent,
-    sourceMap: emitSourceMaps ? outputs.get(`${tempOutDir}${tempFilename}.map`) : undefined
+    sourceMap: emitSourceMaps ? outputs.get(`${tempOutDir}${tempFilename}.map`) : undefined,
   };
-}
+};
 
 export function expect<T extends ts.Node>(node: ts.Node, kind: ts.SyntaxKind): T {
   if (node.kind !== kind) {
-    throw 'Invalid!';
+    throw new Error('Invalid!');
   }
   return node as T;
 }
