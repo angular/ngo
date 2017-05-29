@@ -1,6 +1,6 @@
     $ npm run build
     # in other project
-    $ npm install ../ngo/dist
+    $ npm install ../ngo
     # in webpack config
     "module": {
       "rules": [

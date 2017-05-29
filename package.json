@@ -4,12 +4,13 @@
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf dist/ && tsc -p tsconfig.lib.json",
+    "build": "rimraf dist/ && tsc -p tsconfig.lib.json",
     "test": "node ./scripts/run-spec.js",
-    "debug": "node --inspect --debug-brk ./scripts/run-spec.js"
+    "debug": "node --inspect --debug-brk ./scripts/run-spec.js",
+    "integration": "npm run build && npm run integration:webpack",
+    "integration:webpack": "cd integration/webpack-app && npm install && npm run e2e"
   },
   "dependencies": {
-    "tmp": "0.0.31",
     "typescript": "^2.3.2"
   },
   "devDependencies": {
@@ -18,6 +19,7 @@
     "common-tags": "^1.4.0",
     "jasmine": "^2.6.0",
     "jasmine-spec-reporter": "^4.1.0",
+    "rimraf": "^2.6.1",
     "ts-node": "^2.1.2"
   }
 }
