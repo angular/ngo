@@ -4,24 +4,26 @@
   "main": "dist/index.js",
   "license": "MIT",
   "bin": {
-    "ngo": "./dist/cli"
+    "ngo": "./dist/cli.js"
   },
   "scripts": {
     "build": "rimraf dist/* && tsc -p tsconfig.lib.json",
     "test": "node ./scripts/run-spec.js",
     "debug": "node --inspect --debug-brk ./scripts/run-spec.js",
     "integration": "npm run build && npm run integration:webpack",
-    "integration:webpack": "cd integration/webpack-app && npm install && npm run e2e && npm run benchmark",
+    "integration:webpack": "cd integration/webpack-app && npm i && npm i ../../ && npm run e2e && npm run benchmark",
     "lint": "tslint -c tslint.json 'src/**/*.ts'"
   },
   "dependencies": {
     "magic-string": "^0.19.1",
+    "source-map": "^0.5.6",
     "typescript": "^2.3.2"
   },
   "devDependencies": {
     "@types/common-tags": "^1.2.5",
     "@types/jasmine": "^2.5.47",
     "@types/node": "^7.0.5",
+    "@types/source-map": "^0.5.0",
     "common-tags": "^1.4.0",
     "jasmine": "^2.6.0",
     "jasmine-spec-reporter": "^4.1.0",

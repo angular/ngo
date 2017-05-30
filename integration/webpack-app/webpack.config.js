@@ -1,6 +1,13 @@
 const config = require('./webpack.config.common.js');
 
-config.module.rules.push({ test: /\.ts$/, use: ['ngo-loader', '@ngtools/webpack'] })
-config.module.rules.push({ test: /\.js$/, loader: 'ngo-loader' })
+const ngoLoaderRule = {
+  loader: 'ngo-loader',
+  options: {
+    sourceMap: true
+  }
+}
+
+config.module.rules.push({ test: /\.ts$/, use: [ngoLoaderRule, '@ngtools/webpack'] })
+config.module.rules.push({ test: /\.js$/, use: [ngoLoaderRule] })
 
 module.exports = config;

@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs';
+import { RawSourceMap } from 'source-map';
 const MagicString = require('magic-string');
 
 import { getFoldFileTransformer } from './class-fold';
@@ -16,7 +17,7 @@ interface NgoOptions {
   emitSourceMap?: boolean;
 }
 
-export function ngo(options: NgoOptions): { content: string, sourceMap: { [key: string]: any } | null } {
+export function ngo(options: NgoOptions): { content: string, sourceMap: RawSourceMap | null } {
   options.emitSourceMap = !!options.emitSourceMap;
   const { inputFilePath, emitSourceMap, outputFilePath } = options;
   let { content } = options;
@@ -26,7 +27,7 @@ export function ngo(options: NgoOptions): { content: string, sourceMap: { [key: 
   }
 
   if (!content) {
-    content = readFileSync(inputFilePath as string, 'uTF-8');
+    content = readFileSync(inputFilePath as string, 'UTF-8');
   }
 
   if (HAS_DECORATORS.test(content) || HAS_CTOR_PARAMETERS.test(content)) {
@@ -48,6 +49,7 @@ export function ngo(options: NgoOptions): { content: string, sourceMap: { [key: 
         source: inputFilePath,
         file: outputFilePath ? `${outputFilePath}.map` : null,
         includeContent: true,
+        hires: true,
       }),
     };
   } else {

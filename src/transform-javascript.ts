@@ -1,4 +1,5 @@
-import { basename, dirname, relative } from 'path';
+import { basename } from 'path';
+import { RawSourceMap } from 'source-map';
 import * as ts from 'typescript';
 
 
@@ -84,22 +85,23 @@ export const transformJavascript = (options: TransformJavascriptOptions) => {
     throw new Error('TS compilation was not successfull.');
   }
 
-  let sourceMap = null;
+  let sourceMap: RawSourceMap | null = null;
 
   if (emitSourceMap) {
     const tsSourceMap = outputs.get(`${tempOutDir}${tempFilename}.map`);
     const urlRegExp = /^\/\/# sourceMappingURL=[^\r\n]*/gm;
-    sourceMap = JSON.parse(tsSourceMap as string);
+    sourceMap = JSON.parse(tsSourceMap as string) as RawSourceMap;
     // Fix sourcemaps file references.
     if (outputFilePath) {
       sourceMap.file = basename(outputFilePath);
       transformedContent = transformedContent.replace(urlRegExp, `//# sourceMappingURL=${sourceMap.file}.map\n`);
       if (inputFilePath) {
-        sourceMap.sources = [relative(dirname(outputFilePath), inputFilePath)];
+        sourceMap.sources = [inputFilePath];
       } else {
         sourceMap.sources = [''];
       }
     } else {
+      // TODO: figure out if we should inline sources here.
       transformedContent = transformedContent.replace(urlRegExp, '');
       sourceMap.file = '';
       sourceMap.sources = [''];

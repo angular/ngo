@@ -11,6 +11,7 @@ const nodeModules = path.resolve(__dirname, 'node_modules/');
 const genDirNodeModules = path.resolve(__dirname, 'src', '$$_gendir');
 
 module.exports = {
+  devtool: 'sourcemap',
   resolve: {
     extensions: ['.ts', '.js']
   },
