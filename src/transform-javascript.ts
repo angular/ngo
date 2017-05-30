@@ -1,9 +1,18 @@
-import { RawSourceMap } from 'source-map';
+import { basename, dirname, relative } from 'path';
 import * as ts from 'typescript';
 
 
-export const transformJavascript = (content: string,
-  getTransforms: Array<(program: ts.Program) => ts.TransformerFactory<ts.SourceFile>>, emitSourceMap = false) => {
+interface TransformJavascriptOptions {
+  content: string;
+  getTransforms: Array<(program: ts.Program) => ts.TransformerFactory<ts.SourceFile>>;
+  emitSourceMap?: boolean;
+  inputFilePath?: string;
+  outputFilePath?: string;
+}
+
+export const transformJavascript = (options: TransformJavascriptOptions) => {
+  options.emitSourceMap = !!options.emitSourceMap;
+  const { content, getTransforms, emitSourceMap, inputFilePath, outputFilePath } = options;
 
   // Print error diagnostics.
   const checkDiagnostics = (diagnostics: ts.Diagnostic[]) => {
@@ -45,7 +54,7 @@ export const transformJavascript = (content: string,
     writeFile: (fileName, text) => outputs.set(fileName, text),
   };
 
-  const options: ts.CompilerOptions = {
+  const tsOptions: ts.CompilerOptions = {
     allowJs: true,
     // Using just line feed makes test comparisons easier, and doesn't matter for generated files.
     newLine: ts.NewLineKind.LineFeed,
@@ -54,11 +63,11 @@ export const transformJavascript = (content: string,
     skipLibCheck: true,
     outDir: '$$_temp/',
     sourceMap: emitSourceMap,
-    inlineSources: false,
+    inlineSources: true,
     inlineSourceMap: false,
   };
 
-  const program = ts.createProgram(Array.from(fileMap.keys()), options, host);
+  const program = ts.createProgram(Array.from(fileMap.keys()), tsOptions, host);
 
   // We need the checker inside transforms.
   const transforms = getTransforms.map((getTf) => getTf(program));
@@ -75,15 +84,26 @@ export const transformJavascript = (content: string,
     throw new Error('TS compilation was not successfull.');
   }
 
-
   let sourceMap = null;
 
   if (emitSourceMap) {
     const tsSourceMap = outputs.get(`${tempOutDir}${tempFilename}.map`);
-    sourceMap = JSON.parse(tsSourceMap as string) as RawSourceMap;
-    sourceMap.file = '';
-    sourceMap.sources = [''];
-    transformedContent = transformedContent.replace(/^\/\/# sourceMappingURL=[^\r\n]*/gm, '');
+    const urlRegExp = /^\/\/# sourceMappingURL=[^\r\n]*/gm;
+    sourceMap = JSON.parse(tsSourceMap as string);
+    // Fix sourcemaps file references.
+    if (outputFilePath) {
+      sourceMap.file = basename(outputFilePath);
+      transformedContent = transformedContent.replace(urlRegExp, `//# sourceMappingURL=${sourceMap.file}.map\n`);
+      if (inputFilePath) {
+        sourceMap.sources = [relative(dirname(outputFilePath), inputFilePath)];
+      } else {
+        sourceMap.sources = [''];
+      }
+    } else {
+      transformedContent = transformedContent.replace(urlRegExp, '');
+      sourceMap.file = '';
+      sourceMap.sources = [''];
+    }
   }
 
   return {

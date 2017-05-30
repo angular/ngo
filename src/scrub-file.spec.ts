@@ -4,7 +4,8 @@ import { getScrubFileTransformer } from './scrub-file';
 import { transformJavascript } from './transform-javascript';
 
 
-const transform = (content: string) => transformJavascript(content, [getScrubFileTransformer]).content;
+const transform = (content: string) => transformJavascript(
+  { content, getTransforms: [getScrubFileTransformer] }).content;
 
 describe('ngo', () => {
   const clazz = 'var Clazz = (function () { function Clazz() { } return Clazz; }());';

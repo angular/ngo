@@ -4,7 +4,8 @@ import { getFoldFileTransformer } from './class-fold';
 import { transformJavascript } from './transform-javascript';
 
 
-const transform = (content: string) => transformJavascript(content, [getFoldFileTransformer]).content;
+const transform = (content: string) => transformJavascript(
+  { content, getTransforms: [getFoldFileTransformer] }).content;
 
 describe('class-fold', () => {
   it('folds static properties into class', () => {

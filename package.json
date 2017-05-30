@@ -3,6 +3,9 @@
   "version": "0.0.3",
   "main": "dist/index.js",
   "license": "MIT",
+  "bin": {
+    "ngo": "./dist/cli"
+  },
   "scripts": {
     "build": "rimraf dist/* && tsc -p tsconfig.lib.json",
     "test": "node ./scripts/run-spec.js",
@@ -12,6 +15,7 @@
     "lint": "tslint -c tslint.json 'src/**/*.ts'"
   },
   "dependencies": {
+    "magic-string": "^0.19.1",
     "typescript": "^2.3.2"
   },
   "devDependencies": {

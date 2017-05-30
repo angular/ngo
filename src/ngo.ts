@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs';
+const MagicString = require('magic-string');
+
 import { getFoldFileTransformer } from './class-fold';
 import { getScrubFileTransformer } from './scrub-file';
 import { transformJavascript } from './transform-javascript';
@@ -6,13 +9,51 @@ import { transformJavascript } from './transform-javascript';
 const HAS_DECORATORS = /decorators/;
 const HAS_CTOR_PARAMETERS = /ctorParameters/;
 
-export function ngo(content: string, emitSourceMap = false): { content: string, sourceMap: object | null } {
-  if (HAS_DECORATORS.test(content) || HAS_CTOR_PARAMETERS.test(content)) {
-    return transformJavascript(content, [getScrubFileTransformer, getFoldFileTransformer], emitSourceMap);
+interface NgoOptions {
+  content?: string;
+  inputFilePath?: string;
+  outputFilePath?: string;
+  emitSourceMap?: boolean;
+}
+
+export function ngo(options: NgoOptions): { content: string, sourceMap: { [key: string]: any } | null } {
+  options.emitSourceMap = !!options.emitSourceMap;
+  const { inputFilePath, emitSourceMap, outputFilePath } = options;
+  let { content } = options;
+
+  if (!inputFilePath && !content) {
+    throw new Error('Either filePath or content must be specified in options.');
   }
-  return {
-    content,
-    // TODO: emit a sourcemap where nothing changes instead, but don't know how.
-    sourceMap: null,
-  };
+
+  if (!content) {
+    content = readFileSync(inputFilePath as string, 'uTF-8');
+  }
+
+  if (HAS_DECORATORS.test(content) || HAS_CTOR_PARAMETERS.test(content)) {
+    return transformJavascript({
+      content,
+      getTransforms: [getScrubFileTransformer, getFoldFileTransformer],
+      emitSourceMap,
+      inputFilePath,
+      outputFilePath,
+    });
+  }
+
+  if (emitSourceMap) {
+    // Emit a sourcemap with no changes.
+    const ms = new MagicString(content);
+    return {
+      content,
+      sourceMap: ms.generateMap({
+        source: inputFilePath,
+        file: outputFilePath ? `${outputFilePath}.map` : null,
+        includeContent: true,
+      }),
+    };
+  } else {
+    return {
+      content,
+      sourceMap: null,
+    };
+  }
 }
