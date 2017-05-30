@@ -1,7 +1,5 @@
 import * as ts from 'typescript';
 
-import { expect } from './util';
-
 
 // Don't remove `ctorParameters` from these.
 const PLATFORM_WHITELIST = [
@@ -89,6 +87,13 @@ export function getScrubFileTransformer(program: ts.Program): ts.TransformerFact
     return transformer;
   };
   return foldFileTransform;
+}
+
+export function expect<T extends ts.Node>(node: ts.Node, kind: ts.SyntaxKind): T {
+  if (node.kind !== kind) {
+    throw new Error('Invalid!');
+  }
+  return node as T;
 }
 
 function isDecorationAssignment(node: ts.ExpressionStatement, decorate: ts.VariableDeclaration,
@@ -196,8 +201,8 @@ function findAllDeclarations(node: ts.Node): ts.VariableDeclaration[] {
   return nodes;
 }
 
-function findDecorateFunction(node: ts.Node): ts.VariableDeclaration {
-  let decl: ts.VariableDeclaration = null;
+function findDecorateFunction(node: ts.Node): ts.VariableDeclaration | null {
+  let decl: ts.VariableDeclaration | null = null;
   ts.forEachChild(node, (child) => {
     if (child.kind !== ts.SyntaxKind.VariableStatement) {
       return;

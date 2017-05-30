@@ -1,8 +1,9 @@
+import { RawSourceMap } from 'source-map';
 import * as ts from 'typescript';
 
 
 export const transformJavascript = (content: string,
-  getTransforms: Array<(program: ts.Program) => ts.TransformerFactory<ts.SourceFile>>, emitSourceMaps = false) => {
+  getTransforms: Array<(program: ts.Program) => ts.TransformerFactory<ts.SourceFile>>, emitSourceMap = false) => {
 
   // Print error diagnostics.
   const checkDiagnostics = (diagnostics: ts.Diagnostic[]) => {
@@ -52,9 +53,9 @@ export const transformJavascript = (content: string,
     target: ts.ScriptTarget.ESNext,
     skipLibCheck: true,
     outDir: '$$_temp/',
-    sourceMap: emitSourceMaps,
-    // TODO: figure out if these should be inline.
-    inlineSources: emitSourceMaps,
+    sourceMap: emitSourceMap,
+    inlineSources: false,
+    inlineSourceMap: false,
   };
 
   const program = ts.createProgram(Array.from(fileMap.keys()), options, host);
@@ -68,21 +69,25 @@ export const transformJavascript = (content: string,
 
   checkDiagnostics(diagnostics);
 
-  const transformedContent = outputs.get(`${tempOutDir}${tempFilename}`);
+  let transformedContent = outputs.get(`${tempOutDir}${tempFilename}`);
 
   if (emitSkipped || !transformedContent) {
     throw new Error('TS compilation was not successfull.');
   }
 
+
+  let sourceMap = null;
+
+  if (emitSourceMap) {
+    const tsSourceMap = outputs.get(`${tempOutDir}${tempFilename}.map`);
+    sourceMap = JSON.parse(tsSourceMap as string) as RawSourceMap;
+    sourceMap.file = '';
+    sourceMap.sources = [''];
+    transformedContent = transformedContent.replace(/^\/\/# sourceMappingURL=[^\r\n]*/gm, '');
+  }
+
   return {
     content: transformedContent,
-    sourceMap: emitSourceMaps ? outputs.get(`${tempOutDir}${tempFilename}.map`) : undefined,
+    sourceMap,
   };
 };
-
-export function expect<T extends ts.Node>(node: ts.Node, kind: ts.SyntaxKind): T {
-  if (node.kind !== kind) {
-    throw new Error('Invalid!');
-  }
-  return node as T;
-}

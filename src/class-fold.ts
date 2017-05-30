@@ -148,7 +148,7 @@ function findClassStaticPropertyAssignments(node: ts.Node, checker: ts.TypeCheck
     }
 
     const decls = checker.getSymbolAtLocation(propAccess.expression).declarations;
-    if (decls.length !== 1) {
+    if (decls === undefined || decls.length !== 1) {
       return;
     }
     const classIdx = classes.map((clazz) => clazz.class).indexOf(decls[0] as ts.VariableDeclaration);
