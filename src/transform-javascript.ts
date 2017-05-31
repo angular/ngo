@@ -1,19 +1,21 @@
-import { basename } from 'path';
+import { readFileSync } from 'fs';
+import { basename, dirname, join } from 'path';
 import { RawSourceMap } from 'source-map';
 import * as ts from 'typescript';
+const MagicString = require('magic-string');
+
+import { NgoOptions } from './ngo';
 
 
-interface TransformJavascriptOptions {
+interface TransformJavascriptOptions extends NgoOptions {
   content: string;
   getTransforms: Array<(program: ts.Program) => ts.TransformerFactory<ts.SourceFile>>;
-  emitSourceMap?: boolean;
-  inputFilePath?: string;
-  outputFilePath?: string;
 }
 
 export const transformJavascript = (options: TransformJavascriptOptions) => {
   options.emitSourceMap = !!options.emitSourceMap;
-  const { content, getTransforms, emitSourceMap, inputFilePath, outputFilePath } = options;
+  options.strict = !!options.strict;
+  const { content, getTransforms, emitSourceMap, inputFilePath, outputFilePath, strict } = options;
 
   // Print error diagnostics.
   const checkDiagnostics = (diagnostics: ts.Diagnostic[]) => {
@@ -24,7 +26,7 @@ export const transformJavascript = (options: TransformJavascriptOptions) => {
         getNewLine: () => ts.sys.newLine,
         getCanonicalFileName: (f: string) => f,
       });
-      throw new Error(errors);
+      return errors;
     }
   };
 
@@ -36,15 +38,20 @@ export const transformJavascript = (options: TransformJavascriptOptions) => {
   // We're not actually writing anything to disk, but still need to define an outDir
   // because otherwise TS will fail to emit JS since it would overwrite the original.
   const tempOutDir = '$$_temp/';
-  const tempFilename = 'test.js';
-
+  const tempFilename = 'ngo-default-file.js';
   fileMap.set(tempFilename, content);
+
+  // We need to load the default lib for noEmitOnError to work properly.
+  const defaultLibFileName = 'lib.d.ts';
+  const defaultLibContent = readFileSync(join(dirname(require.resolve('typescript')), defaultLibFileName), 'UTF-8');
+  fileMap.set(defaultLibFileName, defaultLibContent);
+
   fileMap.forEach((v, k) => sourcesMap.set(
     k, ts.createSourceFile(k, v, ts.ScriptTarget.ES2015)));
 
   const host: ts.CompilerHost = {
     getSourceFile: (fileName) => sourcesMap.get(fileName)!,
-    getDefaultLibFileName: () => 'lib.d.ts',
+    getDefaultLibFileName: () => defaultLibFileName,
     getCurrentDirectory: () => '',
     getDirectories: () => [],
     getCanonicalFileName: (fileName) => fileName,
@@ -56,6 +63,7 @@ export const transformJavascript = (options: TransformJavascriptOptions) => {
   };
 
   const tsOptions: ts.CompilerOptions = {
+    noEmitOnError: true,
     allowJs: true,
     // Using just line feed makes test comparisons easier, and doesn't matter for generated files.
     newLine: ts.NewLineKind.LineFeed,
@@ -64,7 +72,7 @@ export const transformJavascript = (options: TransformJavascriptOptions) => {
     skipLibCheck: true,
     outDir: '$$_temp/',
     sourceMap: emitSourceMap,
-    inlineSources: true,
+    inlineSources: emitSourceMap,
     inlineSourceMap: false,
   };
 
@@ -77,12 +85,27 @@ export const transformJavascript = (options: TransformJavascriptOptions) => {
     undefined, host.writeFile, undefined, undefined,
     { before: transforms, after: [] });
 
-  checkDiagnostics(diagnostics);
-
   let transformedContent = outputs.get(`${tempOutDir}${tempFilename}`);
 
   if (emitSkipped || !transformedContent) {
-    throw new Error('TS compilation was not successfull.');
+    // Throw only if we're in strict mode, otherwise return original content.
+    if (strict) {
+      throw new Error(`
+        TS failed with the following error messages:
+
+        ${checkDiagnostics(diagnostics)}
+      `);
+    } else {
+      return {
+        content,
+        sourceMap: !emitSourceMap ? null : new MagicString(content).generateMap({
+          source: inputFilePath,
+          file: outputFilePath ? `${outputFilePath}.map` : null,
+          includeContent: true,
+          hires: true,
+        }),
+      };
+    }
   }
 
   let sourceMap: RawSourceMap | null = null;

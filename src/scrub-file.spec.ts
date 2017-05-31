@@ -7,7 +7,7 @@ import { transformJavascript } from './transform-javascript';
 const transform = (content: string) => transformJavascript(
   { content, getTransforms: [getScrubFileTransformer] }).content;
 
-describe('ngo', () => {
+describe('scrub-file', () => {
   const clazz = 'var Clazz = (function () { function Clazz() { } return Clazz; }());';
 
   describe('decorators', () => {

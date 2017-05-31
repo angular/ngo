@@ -10,16 +10,17 @@ import { transformJavascript } from './transform-javascript';
 const HAS_DECORATORS = /decorators/;
 const HAS_CTOR_PARAMETERS = /ctorParameters/;
 
-interface NgoOptions {
+export interface NgoOptions {
   content?: string;
   inputFilePath?: string;
   outputFilePath?: string;
   emitSourceMap?: boolean;
+  strict?: boolean;
 }
 
 export function ngo(options: NgoOptions): { content: string, sourceMap: RawSourceMap | null } {
   options.emitSourceMap = !!options.emitSourceMap;
-  const { inputFilePath, emitSourceMap, outputFilePath } = options;
+  const { inputFilePath, emitSourceMap, outputFilePath, strict } = options;
   let { content } = options;
 
   if (!inputFilePath && !content) {
@@ -37,6 +38,7 @@ export function ngo(options: NgoOptions): { content: string, sourceMap: RawSourc
       emitSourceMap,
       inputFilePath,
       outputFilePath,
+      strict,
     });
   }
 
