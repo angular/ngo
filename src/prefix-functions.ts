@@ -21,6 +21,11 @@ export function prefixFunctions(file: string, name: string): string {
     contents = contents.substring(0, currPos) + PURE_STRING + contents.substring(currPos);
   }
 
+  // Print out the paths of the import statements with explicit import clauses
+  // so purify can prefix them with pure.
+  const pureImports = findPureImports(source);
+  console.error(`${name}: printing ${pureImports.length} safe imports`);
+  contents += `/** PURE_IMPORTS_START ${pureImports.join(',')} PURE_IMPORTS_END */`;
   return contents;
 }
 
@@ -57,4 +62,18 @@ export function findTopLevelFunctions(node: ts.Node): number[] {
   }
 
   return topLevelPositions;
+}
+
+export function findPureImports(node: ts.Node): string[] {
+  const pureImports = [];
+  ts.forEachChild(node, cb);
+
+  function cb(node: any) {
+    if (node.kind === ts.SyntaxKind.ImportDeclaration && node.importClause) {
+      // Save the path of the import transformed into snake case
+      pureImports.push(node.moduleSpecifier.text.replace(/[\/@\-]/g, '_'));
+    }
+    return ts.forEachChild(node, cb);
+  }
+  return pureImports;
 }
