@@ -1,4 +1,5 @@
 import { oneLine } from 'common-tags';
+import { RawSourceMap } from 'source-map';
 
 import { ngo } from './ngo';
 
@@ -57,6 +58,71 @@ describe('ngo', () => {
       `;
 
       expect(() => ngo({ content: input, strict: true })).toThrow();
+    });
+  });
+
+  describe('sourcemaps', () => {
+    const transformableInput = oneLine`
+      ${imports}
+      ${clazz}
+      ${decorators}
+    `;
+
+    it('doesn\'t produce sourcemaps by default', () => {
+      expect(ngo({ content: transformableInput }).sourceMap).toBeFalsy();
+    });
+
+    it('produces sourcemaps', () => {
+      const ignoredInput = oneLine`
+        var Clazz = (function () { function Clazz() { } return Clazz; }());
+        ${staticProperty}
+      `;
+      expect(ngo({ content: ignoredInput, emitSourceMap: true }).sourceMap).toBeTruthy();
+      expect(ngo({ content: transformableInput, emitSourceMap: true }).sourceMap).toBeTruthy();
+    });
+
+    it('produces sourcemaps for ignored files', () => {
+      const ignoredInput = oneLine`
+        var Clazz = (function () { function Clazz() { } return Clazz; }());
+        ${staticProperty}
+      `;
+      expect(ngo({ content: ignoredInput, emitSourceMap: true }).sourceMap).toBeTruthy();
+      expect(ngo({ content: transformableInput, emitSourceMap: true }).sourceMap).toBeTruthy();
+    });
+
+    it('emits sources content', () => {
+      const sourceMap = ngo({ content: transformableInput, emitSourceMap: true }).sourceMap as RawSourceMap;
+      const sourceContent = sourceMap.sourcesContent as string[];
+      expect(sourceContent[0]).toEqual(transformableInput);
+    });
+
+    it('uses empty strings if inputFilePath and outputFilePath is not provided', () => {
+      const { content, sourceMap } = ngo({ content: transformableInput, emitSourceMap: true });
+
+      if (!sourceMap) {
+        throw new Error('sourceMap was not generated.');
+      }
+      expect(sourceMap.file).toEqual('');
+      expect(sourceMap.sources[0]).toEqual('');
+      expect(content).not.toContain(`sourceMappingURL`);
+    });
+
+    it('uses inputFilePath and outputFilePath if provided', () => {
+      const inputFilePath = 'file.js';
+      const outputFilePath = 'file.ngo.js';
+      const { content, sourceMap } = ngo({
+        content: transformableInput,
+        emitSourceMap: true,
+        inputFilePath,
+        outputFilePath,
+      });
+
+      if (!sourceMap) {
+        throw new Error('sourceMap was not generated.');
+      }
+      expect(sourceMap.file).toEqual(outputFilePath);
+      expect(sourceMap.sources[0]).toEqual(inputFilePath);
+      expect(content).toContain(`sourceMappingURL=${outputFilePath}.map`);
     });
   });
 
