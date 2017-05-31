@@ -1,0 +1,1 @@
+{"version":3,"file":"index.js","sourceRoot":"","sources":["../src/index.ts"],"names":[],"mappings":";;AAAA,mCAAgD;AAAvC,2BAAA,SAAS,CAAW;AAC7B,6BAA4B;AAAnB,oBAAA,GAAG,CAAA","sourcesContent":["export { ngoLoader as default } from './loader';\r\nexport { ngo } from './ngo';\r\n"]}

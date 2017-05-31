@@ -1,4 +1,5 @@
-dist/
+# dist is published to git for now, while the library isn't on npm
+# dist/
 node_modules/
 tmp/
 npm-debug.log
