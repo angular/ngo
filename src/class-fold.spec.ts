@@ -37,6 +37,4 @@ describe('class-fold', () => {
 
     expect(oneLine`${transform(input)}`).toEqual(output);
   });
-
-  // TODO: add some tests for resilience to input.
 });

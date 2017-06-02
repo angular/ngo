@@ -15,7 +15,7 @@ interface StatementData {
 export function getFoldFileTransformer(program: ts.Program): ts.TransformerFactory<ts.SourceFile> {
   const checker = program.getTypeChecker();
 
-  const foldFileTransform = (context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
+  return (context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
 
     const transformer: ts.Transformer<ts.SourceFile> = (sf: ts.SourceFile) => {
 
@@ -66,7 +66,6 @@ export function getFoldFileTransformer(program: ts.Program): ts.TransformerFacto
     };
     return transformer;
   };
-  return foldFileTransform;
 }
 
 function findClassDeclarations(node: ts.Node): ClassData[] {

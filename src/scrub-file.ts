@@ -31,7 +31,7 @@ const ANGULAR_SPECIFIERS = [
 export function getScrubFileTransformer(program: ts.Program): ts.TransformerFactory<ts.SourceFile> {
   const checker = program.getTypeChecker();
 
-  const foldFileTransform = (context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
+  return (context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
 
     const transformer: ts.Transformer<ts.SourceFile> = (sf: ts.SourceFile) => {
 
@@ -86,7 +86,6 @@ export function getScrubFileTransformer(program: ts.Program): ts.TransformerFact
     };
     return transformer;
   };
-  return foldFileTransform;
 }
 
 export function expect<T extends ts.Node>(node: ts.Node, kind: ts.SyntaxKind): T {
