@@ -27,7 +27,7 @@ var ANGULAR_SPECIFIERS = [
 ];
 function getScrubFileTransformer(program) {
     var checker = program.getTypeChecker();
-    var foldFileTransform = function (context) {
+    return function (context) {
         var transformer = function (sf) {
             var ngMetadata = findAngularMetadata(sf);
             var decorate = findDecorateFunction(sf);
@@ -75,7 +75,6 @@ function getScrubFileTransformer(program) {
         };
         return transformer;
     };
-    return foldFileTransform;
 }
 exports.getScrubFileTransformer = getScrubFileTransformer;
 function expect(node, kind) {

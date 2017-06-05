@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var ts = require("typescript");
 function getFoldFileTransformer(program) {
     var checker = program.getTypeChecker();
-    var foldFileTransform = function (context) {
+    return function (context) {
         var transformer = function (sf) {
             var classes = findClassDeclarations(sf);
             var statements = findClassStaticPropertyAssignments(sf, checker, classes);
@@ -33,7 +33,6 @@ function getFoldFileTransformer(program) {
         };
         return transformer;
     };
-    return foldFileTransform;
 }
 exports.getFoldFileTransformer = getFoldFileTransformer;
 function findClassDeclarations(node) {

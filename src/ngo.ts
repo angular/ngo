@@ -3,6 +3,7 @@ import { RawSourceMap } from 'source-map';
 const MagicString = require('magic-string');
 
 import { getFoldFileTransformer } from './class-fold';
+import { getPrefixFunctionsTransformer } from './prefix-functions';
 import { getScrubFileTransformer } from './scrub-file';
 import { transformJavascript } from './transform-javascript';
 
@@ -34,7 +35,12 @@ export function ngo(options: NgoOptions): { content: string, sourceMap: RawSourc
   if (HAS_DECORATORS.test(content) || HAS_CTOR_PARAMETERS.test(content)) {
     return transformJavascript({
       content,
-      getTransforms: [getScrubFileTransformer, getFoldFileTransformer],
+      // Order matters, getPrefixFunctionsTransformer needs to be called before getFoldFileTransformer.
+      getTransforms: [
+        getPrefixFunctionsTransformer,
+        getScrubFileTransformer,
+        getFoldFileTransformer,
+      ],
       emitSourceMap,
       inputFilePath,
       outputFilePath,

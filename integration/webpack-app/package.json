@@ -33,7 +33,7 @@
     "html-webpack-plugin": "^2.28.0",
     "jasmine": "^2.6.0",
     "lite-server": "^2.3.0",
-    "ngo-loader": "../../",
+    "ngo-loader": "file:../../",
     "protractor": "^5.1.2",
     "raw-loader": "^0.5.1",
     "rimraf": "^2.6.1",

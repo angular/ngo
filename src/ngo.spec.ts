@@ -11,7 +11,7 @@ describe('ngo', () => {
   const decorators = 'Clazz.decorators = [ { type: Injectable } ];';
 
   describe('basic functionality', () => {
-    it('applies class-fold and scrub-file', () => {
+    it('applies class-fold, scrub-file and prefix-functions', () => {
       const input = oneLine`
         ${imports}
         ${clazz}
@@ -21,8 +21,9 @@ describe('ngo', () => {
         Clazz.ctorParameters = function () { return [{type: Injector}]; };
       `;
       const output = oneLine`
+        /*PURE_IMPORTS_START _angular_core PURE_IMPORTS_END*/
         ${imports}
-        var Clazz = (function () { function Clazz() { } ${staticProperty} return Clazz; }());
+        var Clazz = /*@__PURE__*/ (function () { function Clazz() { } ${staticProperty} return Clazz; }());
       `;
 
       expect(oneLine`${ngo({ content: input }).content}`).toEqual(output);

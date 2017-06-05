@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var fs_1 = require("fs");
 var MagicString = require('magic-string');
 var class_fold_1 = require("./class-fold");
+var prefix_functions_1 = require("./prefix-functions");
 var scrub_file_1 = require("./scrub-file");
 var transform_javascript_1 = require("./transform-javascript");
 var HAS_DECORATORS = /decorators/;
@@ -20,7 +21,12 @@ function ngo(options) {
     if (HAS_DECORATORS.test(content) || HAS_CTOR_PARAMETERS.test(content)) {
         return transform_javascript_1.transformJavascript({
             content: content,
-            getTransforms: [scrub_file_1.getScrubFileTransformer, class_fold_1.getFoldFileTransformer],
+            // Order matters, getPrefixFunctionsTransformer needs to be called before getFoldFileTransformer.
+            getTransforms: [
+                prefix_functions_1.getPrefixFunctionsTransformer,
+                scrub_file_1.getScrubFileTransformer,
+                class_fold_1.getFoldFileTransformer,
+            ],
             emitSourceMap: emitSourceMap,
             inputFilePath: inputFilePath,
             outputFilePath: outputFilePath,
