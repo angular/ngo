@@ -36,7 +36,6 @@ export function getScrubFileTransformer(program: ts.Program): ts.TransformerFact
     const transformer: ts.Transformer<ts.SourceFile> = (sf: ts.SourceFile) => {
 
       const ngMetadata = findAngularMetadata(sf);
-      const decorate = findDecorateFunction(sf);
 
       const nodes: ts.Node[] = [];
       ts.forEachChild(sf, (node) => {
@@ -54,23 +53,6 @@ export function getScrubFileTransformer(program: ts.Program): ts.TransformerFact
           nodes.push(node);
         }
       });
-
-      if (!!decorate) {
-        const helper = (node: ts.Node) => {
-          if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
-            ts.forEachChild(node, helper);
-            return;
-          }
-          if (isDecorationAssignment(node as ts.ExpressionStatement, decorate, checker)) {
-            const decNodes = pickDecorateNodesToRemove(node as ts.ExpressionStatement, ngMetadata, checker);
-            decNodes.forEach((decNode: any) => decNode._comma = true);
-            nodes.push(...decNodes);
-            return;
-          }
-          ts.forEachChild(node, helper);
-        };
-        ts.forEachChild(sf, helper);
-      }
 
       const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
         // Check if node is a statement to be dropped.
@@ -93,58 +75,6 @@ export function expect<T extends ts.Node>(node: ts.Node, kind: ts.SyntaxKind): T
     throw new Error('Invalid!');
   }
   return node as T;
-}
-
-function isDecorationAssignment(node: ts.ExpressionStatement, decorate: ts.VariableDeclaration,
-  checker: ts.TypeChecker): boolean {
-
-  if (node.expression.kind !== ts.SyntaxKind.BinaryExpression) {
-    return false;
-  }
-  const binEx = node.expression as ts.BinaryExpression;
-
-  if (binEx.right.kind !== ts.SyntaxKind.CallExpression) {
-    return false;
-  }
-  const callEx = binEx.right as ts.CallExpression;
-
-  if (callEx.arguments.length !== 2) {
-    return false;
-  }
-  const arg = callEx.arguments[0];
-  if (arg.kind !== ts.SyntaxKind.ArrayLiteralExpression) {
-    return false;
-  }
-
-  if (!!callEx.expression && callEx.expression.kind === ts.SyntaxKind.Identifier
-    && nodeIsDecorate(callEx.expression, decorate, checker)) {
-    return true;
-  }
-
-  return false;
-}
-
-function pickDecorateNodesToRemove(node: ts.ExpressionStatement,
-  ngMetadata: ts.Node[], checker: ts.TypeChecker): ts.Node[] {
-
-  const binEx = expect<ts.BinaryExpression>(node.expression, ts.SyntaxKind.BinaryExpression);
-  const callEx = expect<ts.CallExpression>(binEx.right, ts.SyntaxKind.CallExpression);
-  const metadata = expect<ts.ArrayLiteralExpression>(callEx.arguments[0], ts.SyntaxKind.ArrayLiteralExpression);
-  return metadata.elements.filter((exp) => {
-    return isAngularDecoratorCall(exp, ngMetadata, checker);
-  });
-}
-
-function isAngularDecoratorCall(node: ts.Expression, ngMetadata: ts.Node[], checker: ts.TypeChecker): boolean {
-  if (node.kind !== ts.SyntaxKind.CallExpression) {
-    return false;
-  }
-  const callEx = node as ts.CallExpression;
-  if (callEx.expression.kind !== ts.SyntaxKind.Identifier) {
-    return false;
-  }
-  const id = callEx.expression as ts.Identifier;
-  return identifierIsMetadata(id, ngMetadata, checker);
 }
 
 function collectDeepNodes<T>(node: ts.Node, kind: ts.SyntaxKind): T[] {
@@ -198,33 +128,6 @@ function findAllDeclarations(node: ts.Node): ts.VariableDeclaration[] {
     }
   });
   return nodes;
-}
-
-function findDecorateFunction(node: ts.Node): ts.VariableDeclaration | null {
-  let decl: ts.VariableDeclaration | null = null;
-  ts.forEachChild(node, (child) => {
-    if (child.kind !== ts.SyntaxKind.VariableStatement) {
-      return;
-    }
-    collectDeepNodes<ts.VariableDeclaration>(child, ts.SyntaxKind.VariableDeclaration).forEach((declChild) => {
-      if (declChild.name.kind !== ts.SyntaxKind.Identifier) {
-        return;
-      }
-      if ((declChild.name as ts.Identifier).text === '___decorate' &&
-        collectDeepNodes<ts.PropertyAccessExpression>(declChild, ts.SyntaxKind.PropertyAccessExpression)
-          .some(isReflectDecorateMethod)) {
-        decl = declChild;
-      }
-    });
-  });
-  return decl;
-}
-
-function isReflectDecorateMethod(node: ts.PropertyAccessExpression): boolean {
-  if (node.expression.kind !== ts.SyntaxKind.Identifier || node.name.kind !== ts.SyntaxKind.Identifier) {
-    return false;
-  }
-  return (node.expression as ts.Identifier).text === 'Reflect' && (node.name as ts.Identifier).text === 'decorate';
 }
 
 function isAngularCoreImport(node: ts.ImportDeclaration): boolean {
@@ -406,14 +309,4 @@ function identifierIsMetadata(id: ts.Identifier, metadata: ts.Node[], checker: t
   return symbol
     .declarations
     .some((spec) => metadata.indexOf(spec) !== -1);
-}
-
-function nodeIsDecorate(node: ts.Node, decorate: ts.VariableDeclaration, checker: ts.TypeChecker): boolean {
-  const symbol = checker.getSymbolAtLocation(node);
-  if (!symbol || !symbol.declarations || !symbol.declarations.length) {
-    return false;
-  }
-  return symbol
-    .declarations
-    .some((spec) => spec === decorate);
 }

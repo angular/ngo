@@ -30,7 +30,6 @@ function getScrubFileTransformer(program) {
     return function (context) {
         var transformer = function (sf) {
             var ngMetadata = findAngularMetadata(sf);
-            var decorate = findDecorateFunction(sf);
             var nodes = [];
             ts.forEachChild(sf, function (node) {
                 if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
@@ -47,22 +46,6 @@ function getScrubFileTransformer(program) {
                     nodes.push(node);
                 }
             });
-            if (!!decorate) {
-                var helper_1 = function (node) {
-                    if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
-                        ts.forEachChild(node, helper_1);
-                        return;
-                    }
-                    if (isDecorationAssignment(node, decorate, checker)) {
-                        var decNodes = pickDecorateNodesToRemove(node, ngMetadata, checker);
-                        decNodes.forEach(function (decNode) { return decNode._comma = true; });
-                        nodes.push.apply(nodes, decNodes);
-                        return;
-                    }
-                    ts.forEachChild(node, helper_1);
-                };
-                ts.forEachChild(sf, helper_1);
-            }
             var visitor = function (node) {
                 // Check if node is a statement to be dropped.
                 if (nodes.find(function (n) { return n === node; })) {
@@ -84,47 +67,6 @@ function expect(node, kind) {
     return node;
 }
 exports.expect = expect;
-function isDecorationAssignment(node, decorate, checker) {
-    if (node.expression.kind !== ts.SyntaxKind.BinaryExpression) {
-        return false;
-    }
-    var binEx = node.expression;
-    if (binEx.right.kind !== ts.SyntaxKind.CallExpression) {
-        return false;
-    }
-    var callEx = binEx.right;
-    if (callEx.arguments.length !== 2) {
-        return false;
-    }
-    var arg = callEx.arguments[0];
-    if (arg.kind !== ts.SyntaxKind.ArrayLiteralExpression) {
-        return false;
-    }
-    if (!!callEx.expression && callEx.expression.kind === ts.SyntaxKind.Identifier
-        && nodeIsDecorate(callEx.expression, decorate, checker)) {
-        return true;
-    }
-    return false;
-}
-function pickDecorateNodesToRemove(node, ngMetadata, checker) {
-    var binEx = expect(node.expression, ts.SyntaxKind.BinaryExpression);
-    var callEx = expect(binEx.right, ts.SyntaxKind.CallExpression);
-    var metadata = expect(callEx.arguments[0], ts.SyntaxKind.ArrayLiteralExpression);
-    return metadata.elements.filter(function (exp) {
-        return isAngularDecoratorCall(exp, ngMetadata, checker);
-    });
-}
-function isAngularDecoratorCall(node, ngMetadata, checker) {
-    if (node.kind !== ts.SyntaxKind.CallExpression) {
-        return false;
-    }
-    var callEx = node;
-    if (callEx.expression.kind !== ts.SyntaxKind.Identifier) {
-        return false;
-    }
-    var id = callEx.expression;
-    return identifierIsMetadata(id, ngMetadata, checker);
-}
 function collectDeepNodes(node, kind) {
     var nodes = [];
     var helper = function (child) {
@@ -171,31 +113,6 @@ function findAllDeclarations(node) {
         }
     });
     return nodes;
-}
-function findDecorateFunction(node) {
-    var decl = null;
-    ts.forEachChild(node, function (child) {
-        if (child.kind !== ts.SyntaxKind.VariableStatement) {
-            return;
-        }
-        collectDeepNodes(child, ts.SyntaxKind.VariableDeclaration).forEach(function (declChild) {
-            if (declChild.name.kind !== ts.SyntaxKind.Identifier) {
-                return;
-            }
-            if (declChild.name.text === '___decorate' &&
-                collectDeepNodes(declChild, ts.SyntaxKind.PropertyAccessExpression)
-                    .some(isReflectDecorateMethod)) {
-                decl = declChild;
-            }
-        });
-    });
-    return decl;
-}
-function isReflectDecorateMethod(node) {
-    if (node.expression.kind !== ts.SyntaxKind.Identifier || node.name.kind !== ts.SyntaxKind.Identifier) {
-        return false;
-    }
-    return node.expression.text === 'Reflect' && node.name.text === 'decorate';
 }
 function isAngularCoreImport(node) {
     return true &&
@@ -359,14 +276,5 @@ function identifierIsMetadata(id, metadata, checker) {
     return symbol
         .declarations
         .some(function (spec) { return metadata.indexOf(spec) !== -1; });
-}
-function nodeIsDecorate(node, decorate, checker) {
-    var symbol = checker.getSymbolAtLocation(node);
-    if (!symbol || !symbol.declarations || !symbol.declarations.length) {
-        return false;
-    }
-    return symbol
-        .declarations
-        .some(function (spec) { return spec === decorate; });
 }
 //# sourceMappingURL=scrub-file.js.map
