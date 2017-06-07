@@ -35,4 +35,4 @@ exports.ngoLoader = ngoLoader;
 // TODO: investigate weird extra maps at webpack:// root
 // without ngo: main.bundle.js, vendor.bundle.js
 // with ngo: app.module.ngfactory.js, main.bundle.js, null?37a6, vendor.bundle.js
-//# sourceMappingURL=loader.js.map
+//# sourceMappingURL=ngo-webpack-loader.js.map
