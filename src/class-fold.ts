@@ -146,7 +146,12 @@ function findClassStaticPropertyAssignments(node: ts.Node, checker: ts.TypeCheck
       return;
     }
 
-    const decls = checker.getSymbolAtLocation(propAccess.expression).declarations;
+    const symbol = checker.getSymbolAtLocation(propAccess.expression);
+    if (!symbol) {
+      return;
+    }
+
+    const decls = symbol.declarations;
     if (decls === undefined || decls.length !== 1) {
       return;
     }

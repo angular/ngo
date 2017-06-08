@@ -14,10 +14,6 @@ function purify(content) {
         .replace(new RegExp("(_(" + pureImportMatches + ")___default = )(__webpack_require__\\.\\w\\(\\S+\\));", 'mg'), '$1/*@__PURE__*/$3')
         .replace(/__WEBPACK_IMPORTED_MODULE_0__angular_core__\["_\w+" \/\* (ɵccf|ɵcmf) \*\/\]\(/mg, '/*@__PURE__*/$&')
         .replace(/\/\*\*\n\s+\* @license.*\n(\s+\*[^\/].*\n)*\s+\*\//mg, '\n');
-    // TODO: replace ts helpers with tslib imports
-    // if (fileName.startsWith('polyfills.')) {
-    //   newFileBody += '\n\n' + fs.readFileSync('node_modules/tslib/tslib.js').toString();
-    // }
     return newContent;
 }
 exports.purify = purify;

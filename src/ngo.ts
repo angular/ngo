@@ -3,6 +3,7 @@ import { RawSourceMap } from 'source-map';
 const MagicString = require('magic-string');
 
 import { getFoldFileTransformer } from './class-fold';
+import { getImportTslibTransformer } from './import-tslib';
 import { getPrefixFunctionsTransformer } from './prefix-functions';
 import { getScrubFileTransformer } from './scrub-file';
 import { transformJavascript } from './transform-javascript';
@@ -37,6 +38,7 @@ export function ngo(options: NgoOptions): { content: string, sourceMap: RawSourc
       content,
       // Order matters, getPrefixFunctionsTransformer needs to be called before getFoldFileTransformer.
       getTransforms: [
+        getImportTslibTransformer,
         getPrefixFunctionsTransformer,
         getScrubFileTransformer,
         getFoldFileTransformer,
