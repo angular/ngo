@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var fs_1 = require("fs");
 var MagicString = require('magic-string');
 var class_fold_1 = require("./class-fold");
+var import_tslib_1 = require("./import-tslib");
 var prefix_functions_1 = require("./prefix-functions");
 var scrub_file_1 = require("./scrub-file");
 var transform_javascript_1 = require("./transform-javascript");
@@ -23,6 +24,7 @@ function ngo(options) {
             content: content,
             // Order matters, getPrefixFunctionsTransformer needs to be called before getFoldFileTransformer.
             getTransforms: [
+                import_tslib_1.getImportTslibTransformer,
                 prefix_functions_1.getPrefixFunctionsTransformer,
                 scrub_file_1.getScrubFileTransformer,
                 class_fold_1.getFoldFileTransformer,

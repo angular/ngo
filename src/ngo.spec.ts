@@ -14,6 +14,11 @@ describe('ngo', () => {
     it('applies class-fold, scrub-file and prefix-functions', () => {
       const input = oneLine`
         ${imports}
+        var __extends = (this && this.__extends) || function (d, b) {
+          for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+          function __() { this.constructor = d; }
+          d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+        };
         ${clazz}
         ${staticProperty}
         ${decorators}
@@ -21,8 +26,9 @@ describe('ngo', () => {
         Clazz.ctorParameters = function () { return [{type: Injector}]; };
       `;
       const output = oneLine`
-        /*PURE_IMPORTS_START _angular_core PURE_IMPORTS_END*/
+        /*PURE_IMPORTS_START _angular_core,tslib PURE_IMPORTS_END*/
         ${imports}
+        import { __extends } from "tslib";
         var Clazz = /*@__PURE__*/ (function () { function Clazz() { } ${staticProperty} return Clazz; }());
       `;
 
