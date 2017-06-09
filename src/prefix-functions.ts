@@ -8,7 +8,7 @@ export function getPrefixFunctionsTransformer(): ts.TransformerFactory<ts.Source
       const pureFunctionComment = '@__PURE__';
       const topLevelFunctions = findTopLevelFunctions(sf);
       const pureImports = findPureImports(sf);
-      const pureImportsComment = `PURE_IMPORTS_START ${pureImports.join(',')} PURE_IMPORTS_END`;
+      const pureImportsComment = `* PURE_IMPORTS_START ${pureImports.join(',')} PURE_IMPORTS_END `;
 
       const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
 
