@@ -1,4 +1,4 @@
-import { oneLine } from 'common-tags';
+import { oneLine, stripIndent } from 'common-tags';
 
 import { getImportTslibTransformer } from './import-tslib';
 import { transformJavascript } from './transform-javascript';
@@ -9,23 +9,23 @@ const transform = (content: string) => transformJavascript(
 
 describe('import-tslib', () => {
   it('replaces __extends with', () => {
-    const input = oneLine`
+    const input = stripIndent`
       var __extends = (this && this.__extends) || function (d, b) {
         for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
       };
     `;
-    const output = oneLine`
+    const output = stripIndent`
       import { __extends } from "tslib";
     `;
 
-    expect(oneLine`${transform(input)}`).toEqual(output);
+    expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
   });
 
   it('replaces __decorate with', () => {
     // tslint:disable:max-line-length
-    const input = oneLine`
+    const input = stripIndent`
       var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
           var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
           if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -34,37 +34,37 @@ describe('import-tslib', () => {
       };
     `;
     // tslint:enable:max-line-length
-    const output = oneLine`
+    const output = stripIndent`
       import { __decorate } from "tslib";
     `;
 
-    expect(oneLine`${transform(input)}`).toEqual(output);
+    expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
   });
 
   it('replaces __metadata with', () => {
-    const input = oneLine`
+    const input = stripIndent`
       var __metadata = (this && this.__metadata) || function (k, v) {
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
       };
     `;
-    const output = oneLine`
+    const output = stripIndent`
       import { __metadata } from "tslib";
     `;
 
-    expect(oneLine`${transform(input)}`).toEqual(output);
+    expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
   });
 
   it('replaces __param with', () => {
-    const input = oneLine`
+    const input = stripIndent`
       var __param = (this && this.__param) || function (paramIndex, decorator) {
           return function (target, key) { decorator(target, key, paramIndex); }
       };
     `;
 
-    const output = oneLine`
+    const output = stripIndent`
       import { __param } from "tslib";
     `;
 
-    expect(oneLine`${transform(input)}`).toEqual(output);
+    expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
   });
 });

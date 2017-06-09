@@ -1,4 +1,4 @@
-import { oneLine } from 'common-tags';
+import { oneLine, stripIndent } from 'common-tags';
 
 import { getPrefixFunctionsTransformer } from './prefix-functions';
 import { transformJavascript } from './transform-javascript';
@@ -13,72 +13,72 @@ describe('prefix-functions', () => {
 
   describe('pure imports', () => {
     it('adds import list', () => {
-      const input = oneLine`
+      const input = stripIndent`
         import { Injectable } from '@angular/core';
         var foo = Injectable;
       `;
-      const output = oneLine`
+      const output = stripIndent`
         /*PURE_IMPORTS_START _angular_core PURE_IMPORTS_END*/
         ${input}
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
 
     it('adds import list even with no imports', () => {
-      const input = oneLine`
+      const input = stripIndent`
         var foo = 42;
       `;
-      const output = oneLine`
+      const output = stripIndent`
         ${emptyImportsComment}
         ${input}
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
   });
 
   describe('pure functions', () => {
     it('adds comment to new calls', () => {
-      const input = oneLine`
+      const input = stripIndent`
         var newClazz = new Clazz();
       `;
-      const output = oneLine`
+      const output = stripIndent`
         ${emptyImportsComment}
         var newClazz = /*@__PURE__*/ new Clazz();
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
 
     it('adds comment to function calls', () => {
-      const input = oneLine`
+      const input = stripIndent`
         var newClazz = Clazz();
       `;
-      const output = oneLine`
+      const output = stripIndent`
         ${emptyImportsComment}
         var newClazz = /*@__PURE__*/ Clazz();
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
 
     it('adds comment outside of IIFEs', () => {
-      const input = oneLine`
+      const input = stripIndent`
         ${clazz}
         var ClazzTwo = (function () { function Clazz() { } return Clazz; })();
       `;
-      const output = oneLine`
+      const output = stripIndent`
         ${emptyImportsComment}
         var Clazz = /*@__PURE__*/ (function () { function Clazz() { } return Clazz; }());
         var ClazzTwo = /*@__PURE__*/ (function () { function Clazz() { } return Clazz; })();
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
 
     it('doesn\'t adds comment when inside function declarations or expressions', () => {
-      const input = oneLine`
+      const input = stripIndent`
         function funcDecl() {
           var newClazz = Clazz();
           var newClazzTwo = new Clazz();
@@ -89,12 +89,12 @@ describe('prefix-functions', () => {
           var newClazzTwo = new Clazz();
         };
       `;
-      const output = oneLine`
+      const output = stripIndent`
         ${emptyImportsComment}
         ${input}
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
   });
 });

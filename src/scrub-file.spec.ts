@@ -1,4 +1,4 @@
-import { oneLine } from 'common-tags';
+import { oneLine, stripIndent } from 'common-tags';
 
 import { getScrubFileTransformer } from './scrub-file';
 import { transformJavascript } from './transform-javascript';
@@ -12,72 +12,72 @@ describe('scrub-file', () => {
 
   describe('decorators', () => {
     it('removes Angular decorators', () => {
-      const output = oneLine`
+      const output = stripIndent`
         import { Injectable } from '@angular/core';
         ${clazz}
       `;
-      const input = oneLine`
+      const input = stripIndent`
         ${output}
         Clazz.decorators = [ { type: Injectable } ];
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
 
     it('doesn\'t remove non Angular decorators', () => {
-      const input = oneLine`
+      const input = stripIndent`
         import { Injectable } from 'another-lib';
         ${clazz}
         Clazz.decorators = [{ type: Injectable }];
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(input);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${input}`);
     });
 
     it('leaves non-Angulars decorators in mixed arrays', () => {
-      const input = oneLine`
+      const input = stripIndent`
         import { Injectable } from '@angular/core';
         import { NotInjectable } from 'another-lib';
         ${clazz}
         Clazz.decorators = [{ type: Injectable }, { type: NotInjectable }];
       `;
-      const output = oneLine`
+      const output = stripIndent`
         import { Injectable } from '@angular/core';
         import { NotInjectable } from 'another-lib';
         ${clazz}
         Clazz.decorators = [{ type: NotInjectable }];
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
   });
 
   describe('propDecorators', () => {
     it('removes Angular propDecorators', () => {
-      const output = oneLine`
+      const output = stripIndent`
         import { Input } from '@angular/core';
         ${clazz}
       `;
-      const input = oneLine`
+      const input = stripIndent`
         ${output}
         Clazz.propDecorators = { 'ngIf': [{ type: Input }] }
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
 
     it('doesn\'t remove non Angular propDecorators', () => {
-      const input = oneLine`
+      const input = stripIndent`
         import { Input } from 'another-lib';
         ${clazz}
         Clazz.propDecorators = { \'ngIf\': [{ type: Input }] };
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(input);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${input}`);
     });
 
     it('leaves non-Angulars propDecorators in mixed arrays', () => {
-      const output = oneLine`
+      const output = stripIndent`
         import { Input } from '@angular/core';
         import { NotInput } from 'another-lib';
         ${clazz}
@@ -85,7 +85,7 @@ describe('scrub-file', () => {
           'notNgIf': [{ type: NotInput }]
         };
       `;
-      const input = oneLine`
+      const input = stripIndent`
         import { Input } from '@angular/core';
         import { NotInput } from 'another-lib';
         ${clazz}
@@ -95,42 +95,42 @@ describe('scrub-file', () => {
         };
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
   });
 
   describe('ctorParameters', () => {
     it('removes empty constructor parameters', () => {
-      const output = oneLine`
+      const output = stripIndent`
         ${clazz}
       `;
-      const input = oneLine`
+      const input = stripIndent`
         ${output}
         Clazz.ctorParameters = function () { return []; };
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
 
     it('removes non-empty constructor parameters', () => {
-      const output = oneLine`
+      const output = stripIndent`
         ${clazz}
       `;
-      const input = oneLine`
+      const input = stripIndent`
         ${clazz}
         Clazz.ctorParameters = function () { return [{type: Injector}]; };
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(output);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
     });
 
     it('doesn\'t remove constructor parameters from whitelisted classes', () => {
-      const input = oneLine`
+      const input = stripIndent`
         ${clazz.replace('Clazz', 'PlatformRef_')}
         PlatformRef_.ctorParameters = function () { return []; };
       `;
 
-      expect(oneLine`${transform(input)}`).toEqual(input);
+      expect(oneLine`${transform(input)}`).toEqual(oneLine`${input}`);
     });
   });
 });
