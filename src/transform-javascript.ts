@@ -7,7 +7,7 @@ const MagicString = require('magic-string');
 import { NgoOptions } from './ngo';
 
 
-interface TransformJavascriptOptions extends NgoOptions {
+export interface TransformJavascriptOptions extends NgoOptions {
   content: string;
   getTransforms: Array<(program: ts.Program) => ts.TransformerFactory<ts.SourceFile>>;
 }
