@@ -7,8 +7,6 @@
     "noEmitOnError": true,
     "strictNullChecks":true,
     "noImplicitAny": true,
-    "noUnusedParameters": true,
-    "noUnusedLocals": true,
     "sourceMap": true,
     "inlineSources": true,
     "declaration": true,

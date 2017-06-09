@@ -14,7 +14,7 @@
     "debug": "node --inspect --debug-brk ./scripts/run-spec.js",
     "integration": "npm run build && npm run integration:webpack",
     "integration:webpack": "cd integration/webpack-app && npm i && rimraf node_modules/ngo-loader && npm i ../../ && npm run e2e && npm run benchmark",
-    "lint": "tslint -c tslint.json 'src/**/*.ts'"
+    "lint": "tslint --type-check --project=tsconfig.lib.json && tslint --type-check --project=tsconfig.spec.json"
   },
   "dependencies": {
     "loader-utils": "^1.1.0",
