@@ -52,15 +52,12 @@ module.exports = {
       test: /\.js$/,
       threshold: 0,
       minRatio: 0.8
-<<<<<<< HEAD
     }),
     new webpack.optimize.UglifyJsPlugin({
       mangle: { screw_ie8: true },
       compress: { screw_ie8: true, warnings: false, pure_getters: true },
       sourceMap: true,
       comments: false
-=======
->>>>>>> test: make webpack output less noisy
     })
   ],
   module: {
