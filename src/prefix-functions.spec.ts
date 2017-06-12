@@ -8,7 +8,7 @@ const transform = (content: string) => transformJavascript(
   { content, getTransforms: [getPrefixFunctionsTransformer] }).content;
 
 describe('prefix-functions', () => {
-  const emptyImportsComment = '/*PURE_IMPORTS_START PURE_IMPORTS_END*/';
+  const emptyImportsComment = '/** PURE_IMPORTS_START PURE_IMPORTS_END */';
   const clazz = 'var Clazz = (function () { function Clazz() { } return Clazz; }());';
 
   describe('pure imports', () => {
@@ -18,7 +18,7 @@ describe('prefix-functions', () => {
         var foo = Injectable;
       `;
       const output = stripIndent`
-        /*PURE_IMPORTS_START _angular_core PURE_IMPORTS_END*/
+        /** PURE_IMPORTS_START _angular_core PURE_IMPORTS_END */
         ${input}
       `;
 

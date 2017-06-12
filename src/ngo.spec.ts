@@ -26,7 +26,7 @@ describe('ngo', () => {
         Clazz.ctorParameters = function () { return [{type: Injector}]; };
       `;
       const output = oneLine`
-        /*PURE_IMPORTS_START _angular_core,tslib PURE_IMPORTS_END*/
+        /** PURE_IMPORTS_START _angular_core,tslib PURE_IMPORTS_END */
         ${imports}
         import { __extends } from "tslib";
         var Clazz = /*@__PURE__*/ (function () { function Clazz() { } ${staticProperty} return Clazz; }());

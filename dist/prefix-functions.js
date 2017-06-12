@@ -7,7 +7,7 @@ function getPrefixFunctionsTransformer() {
             var pureFunctionComment = '@__PURE__';
             var topLevelFunctions = findTopLevelFunctions(sf);
             var pureImports = findPureImports(sf);
-            var pureImportsComment = "PURE_IMPORTS_START " + pureImports.join(',') + " PURE_IMPORTS_END";
+            var pureImportsComment = "* PURE_IMPORTS_START " + pureImports.join(',') + " PURE_IMPORTS_END ";
             var visitor = function (node) {
                 // Add the pure imports comment to the first node.
                 if (node.parent && node.parent.parent === undefined && node.pos === 0) {
