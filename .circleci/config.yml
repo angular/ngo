@@ -1,0 +1,19 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/ngo
+    docker:
+      - image: alexeagle/ngcontainer
+    steps:
+      - checkout
+      - restore_cache:
+          key: ngo-{{ .Branch }}-{{ checksum "package.json" }}
+      - run: npm install
+      - run: npm run lint
+      - run: npm run test
+      - run: xvfb-run -a npm run integration
+      - save_cache:
+          key: ngo-{{ .Branch }}-{{ checksum "package.json" }}
+          paths:
+            - "node_modules"
+            - "integration/webpack-app/node_modules"
