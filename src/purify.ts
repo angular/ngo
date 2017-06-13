@@ -7,6 +7,17 @@ export function purify(content: string) {
   const pureImportMatches = getMatches(content, importCommentRegex, 1).join('|');
 
   const newContent = content
+    /* prefix downleveled classes w/ the @__PURE__ annotation */
+    .replace(
+      // tslint:disable-next-line:max-line-length
+      /^(var (\S+) = )(\(function \(\) \{\r?\n(?:    (?:\/\*\*| \*|\*\/|\/\/)[^\r?\n]*\r?\n)*    function \2\([^\)]*\) \{\r?\n)/mg,
+      '$1/*@__PURE__*/$3',
+    )
+    /* prefix downleveled classes that extend another class w/ the @__PURE__ annotation */
+    .replace(
+      /^(var (\S+) = )(\(function \(_super\) \{\r?\n    \w*__extends\(\w+, _super\);\r?\n)/mg,
+      '$1/*@__PURE__*/$3',
+    )
     /* wrap TS 2.2 enums w/ an IIFE */
     .replace(
       /var (\S+) = \{\};\r?\n(\1\.(\S+) = \d+;\r?\n)+\1\[\1\.(\S+)\] = "\4";\r?\n(\1\[\1\.(\S+)\] = "\S+";\r?\n*)+/mg,
@@ -30,12 +41,13 @@ export function purify(content: string) {
     )
     /* Prefix CCF and CMF statements */
     .replace(
-      /__WEBPACK_IMPORTED_MODULE_\d+__angular_core__\["_?\w+" \/\* (ɵccf|ɵcmf) \*\/\]\(/mg,
+      /\w*__WEBPACK_IMPORTED_MODULE_\d+__angular_core__\["\w+" \/\* (ɵccf|ɵcmf) \*\/\]\(/mg,
       '/*@__PURE__*/$&',
     )
+    /* Prefix module statements */
     .replace(
-      /\/\*\*\r?\n\s*\*\s?@license.*\r?\n(\s*\*[^\/].*\r?\n)*\s*\*\//mg,
-      '\n',
+      /new \w*__WEBPACK_IMPORTED_MODULE_\d+__angular_core__\["\w+" \/\* NgModuleFactory \*\/\]/mg,
+      '/*@__PURE__*/$&',
     );
 
   return newContent;
