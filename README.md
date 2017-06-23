@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/angular/ngo/tree/master.svg?style=shield)](https://circleci.com/gh/angular/ngo/tree/master)
+
 # Angular Optimizer (NGO)
 
 NGO contains Angular optimizations applicable to JavaScript code as a TypeScript transform pipeline.
