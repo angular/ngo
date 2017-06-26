@@ -10,10 +10,17 @@
   },
   "scripts": {
     "build": "rimraf dist/* && tsc -p tsconfig.lib.json",
+    "build:watch": "rimraf dist/* && tsc -w -p tsconfig.lib.json",
     "test": "node ./scripts/run-spec.js",
     "debug": "node --inspect --debug-brk ./scripts/run-spec.js",
-    "integration": "npm run build && npm run integration:webpack",
-    "integration:webpack": "cd integration/webpack-app && npm i && rimraf node_modules/ngo-loader && npm i ../../ && npm run e2e && npm run benchmark",
+    "integration": "yarn build && yarn integration:webpack",
+    "integration:webpack": "yarn integration:webpack:simple && yarn integration:webpack:aio",
+    "integration:webpack:simple": "cd integration/webpack/simple-app && yarn && yarn reinstall-ngo && yarn e2e",
+    "integration:webpack:aio": "cd integration/webpack/aio-app && yarn && yarn reinstall-ngo  && yarn e2e",
+    "benchmark": "yarn build && yarn benchmark:webpack",
+    "benchmark:webpack": "yarn benchmark:webpack:simple && yarn benchmark:webpack:aio",
+    "benchmark:webpack:simple": "cd integration/webpack/simple-app && yarn && yarn reinstall-ngo && yarn benchmark",
+    "benchmark:webpack:aio": "cd integration/webpack/aio-app && yarn && yarn reinstall-ngo && yarn benchmark",
     "lint": "tslint --type-check --project tsconfig.lib.json && tslint --type-check --project tsconfig.spec.json"
   },
   "dependencies": {

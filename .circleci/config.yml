@@ -7,13 +7,25 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: ngo-{{ .Branch }}-{{ checksum "package.json" }}
-      - run: npm install
-      - run: npm run lint
-      - run: npm run test
-      - run: xvfb-run -a npm run integration
+          key: ngo-{{ .Branch }}-{{ checksum "yarn.lock" }}
+      - restore_cache:
+          key: ngo-simple-app-{{ .Branch }}-{{ checksum "integration/webpack/simple-app/yarn.lock" }}
+      - restore_cache:
+          key: ngo-aio-app-{{ .Branch }}-{{ checksum "integration/webpack/aio-app/yarn.lock" }}
+      - run: yarn
+      - run: yarn lint
+      - run: yarn test
+      - run: xvfb-run -a yarn integration
+      - run: yarn benchmark
       - save_cache:
-          key: ngo-{{ .Branch }}-{{ checksum "package.json" }}
+          key: ngo-{{ .Branch }}-{{ checksum "yarn.lock" }}
           paths:
             - "node_modules"
-            - "integration/webpack-app/node_modules"
+      - save_cache:
+          key: ngo-simple-app-{{ .Branch }}-{{ checksum "integration/webpack/simple-app/yarn.lock" }}
+          paths:
+            - "integration/webpack/simple-app/node_modules"
+      - save_cache:
+          key: ngo-aio-app-{{ .Branch }}-{{ checksum "integration/webpack/simple-app/yarn.lock" }}
+          paths:
+            - "integration/webpack/aio-app/node_modules"
