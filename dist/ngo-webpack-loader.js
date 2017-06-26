@@ -5,7 +5,7 @@ var loaderUtils = require('loader-utils');
 var ngo_1 = require("./ngo");
 function ngoLoader(content, previousSourceMap) {
     this.cacheable();
-    var options = loaderUtils.getOptions(this);
+    var options = loaderUtils.getOptions(this) || {};
     var ngoOutput = ngo_1.ngo({ content: content, emitSourceMap: options.sourceMap });
     var intermediateSourceMap = ngoOutput.sourceMap;
     var newContent = ngoOutput.content;
