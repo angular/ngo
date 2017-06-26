@@ -1,0 +1,48 @@
+{
+  "name": "webpack-app",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "rimraf dist && webpack --hide-modules",
+    "build-no-ngo": "rimraf dist-no-ngo && webpack --config=webpack.config.no-ngo.js --hide-modules",
+    "build-old-ngo": "rimraf dist-old-ngo && webpack --config=webpack.config.old-ngo.js --hide-modules",
+    "serve": "lite-server",
+    "pree2e": "yarn build",
+    "e2e": "concurrently \"yarn serve\" \"yarn protractor\" --kill-others --success first",
+    "preprotractor": "webdriver-manager update",
+    "protractor": "protractor protractor.config.js",
+    "benchmark": "yarn build && yarn build-no-ngo && yarn build-old-ngo && node benchmark.js && node parity-benchmark.js",
+    "reinstall-ngo": "rimraf node_modules/ngo && npm i ../../../"
+  },
+  "dependencies": {
+    "@angular/common": "^4.2.3",
+    "@angular/compiler": "^4.2.3",
+    "@angular/compiler-cli": "^4.2.3",
+    "@angular/core": "^4.2.3",
+    "@angular/http": "^4.2.3",
+    "@angular/platform-browser": "^4.2.3",
+    "@angular/platform-browser-dynamic": "^4.2.3",
+    "@angular/router": "^4.2.3",
+    "@ngtools/webpack": "1.4.1",
+    "core-js": "^2.4.1",
+    "rxjs": "^5.1.0",
+    "zone.js": "^0.8.4"
+  },
+  "devDependencies": {
+    "@types/jasmine": "2.5.45",
+    "compression-webpack-plugin": "^0.4.0",
+    "concurrently": "^3.4.0",
+    "copy-webpack-plugin": "^4.0.1",
+    "jasmine": "^2.6.0",
+    "lite-server": "^2.3.0",
+    "ngo": "file:../../..",
+    "ngo-loader": "alxhub/ngo",
+    "protractor": "^5.1.2",
+    "purify": "igorminar/purify",
+    "raw-loader": "^0.5.1",
+    "rimraf": "^2.6.1",
+    "ts-node": "^3.0.4",
+    "typescript": "~2.3.3",
+    "webpack": "3.0.0"
+  }
+}
