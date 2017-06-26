@@ -4,11 +4,13 @@ var ts = require("typescript");
 function getImportTslibTransformer() {
     return function (context) {
         var transformer = function (sf) {
+            // Check if module has CJS exports. If so, use 'require()' instead of 'import'.
+            var useRequire = /exports.\S+\s*=/.test(sf.getText());
             var visitor = function (node) {
                 // Check if node is a TS helper declaration.
                 if (isTsHelper(node)) {
                     // Replace node with import for that helper.
-                    return ts.visitEachChild(createTslibImport(node), visitor, context);
+                    return ts.visitEachChild(createTslibImport(node, useRequire), visitor, context);
                 }
                 // Otherwise return node as is.
                 return ts.visitEachChild(node, visitor, context);
@@ -19,17 +21,30 @@ function getImportTslibTransformer() {
     };
 }
 exports.getImportTslibTransformer = getImportTslibTransformer;
-function createTslibImport(node) {
+function createTslibImport(node, useRequire) {
+    if (useRequire === void 0) { useRequire = false; }
     var name = getVariableStatementName(node);
     if (!name) {
         return node;
     }
-    var namedImports = ts.createNamedImports([ts.createImportSpecifier(undefined, ts.createIdentifier(name))]);
-    // typescript@next is needed for a fix to the function parameter types of ts.createImportClause.
-    // https://github.com/Microsoft/TypeScript/pull/15999
-    var importClause = ts.createImportClause(undefined, namedImports);
-    var newNode = ts.createImportDeclaration(undefined, undefined, importClause, ts.createLiteral('tslib'));
-    return newNode;
+    if (useRequire) {
+        // Use `var __helper = /*@__PURE__*/ require("tslib").__helper`.
+        var requireCall = ts.createCall(ts.createIdentifier('require'), undefined, [ts.createLiteral('tslib')]);
+        var pureRequireCall = ts.addSyntheticLeadingComment(requireCall, ts.SyntaxKind.MultiLineCommentTrivia, '@__PURE__', false);
+        var helperAccess = ts.createPropertyAccess(pureRequireCall, name);
+        var variableDeclaration = ts.createVariableDeclaration(name, undefined, helperAccess);
+        var variableStatement = ts.createVariableStatement(undefined, [variableDeclaration]);
+        return variableStatement;
+    }
+    else {
+        // Use `import { __helper } from "tslib"`.
+        var namedImports = ts.createNamedImports([ts.createImportSpecifier(undefined, ts.createIdentifier(name))]);
+        // typescript@next is needed for a fix to the function parameter types of ts.createImportClause.
+        // https://github.com/Microsoft/TypeScript/pull/15999
+        var importClause = ts.createImportClause(undefined, namedImports);
+        var newNode = ts.createImportDeclaration(undefined, undefined, importClause, ts.createLiteral('tslib'));
+        return newNode;
+    }
 }
 function isTsHelper(node) {
     if (node.kind !== ts.SyntaxKind.VariableStatement) {

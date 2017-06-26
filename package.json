@@ -1,5 +1,5 @@
 {
-  "name": "ngo-loader",
+  "name": "ngo",
   "version": "0.0.10",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",

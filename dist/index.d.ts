@@ -1,5 +1,4 @@
-export { ngoLoader as default } from './ngo-webpack-loader';
-export { ngoLoader } from './ngo-webpack-loader';
+export { default as ngoLoader } from './ngo-webpack-loader';
 export { ngo } from './ngo';
 export { getFoldFileTransformer } from './class-fold';
 export { getPrefixFunctionsTransformer } from './prefix-functions';

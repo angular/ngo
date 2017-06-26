@@ -67,4 +67,21 @@ describe('import-tslib', () => {
 
     expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
   });
+
+  it('replaces uses "require" instead of "import" on CJS modules', () => {
+    const input = stripIndent`
+      var __extends = (this && this.__extends) || function (d, b) {
+        for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+      };
+      exports.meaning = 42;
+    `;
+    const output = stripIndent`
+      var __extends = /*@__PURE__*/ require("tslib").__extends;
+      exports.meaning = 42;
+    `;
+
+    expect(oneLine`${transform(input)}`).toEqual(oneLine`${output}`);
+  });
 });

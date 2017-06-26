@@ -11,6 +11,7 @@ import { transformJavascript } from './transform-javascript';
 
 const HAS_DECORATORS = /decorators/;
 const HAS_CTOR_PARAMETERS = /ctorParameters/;
+const HAS_TS_HELPERS = /var (__extends|__decorate|__metadata|__param) = /;
 
 export interface NgoOptions {
   content?: string;
@@ -33,24 +34,34 @@ export function ngo(options: NgoOptions): { content: string, sourceMap: RawSourc
     content = readFileSync(inputFilePath as string, 'UTF-8');
   }
 
+  // Determine which transforms to apply.
+  const getTransforms = [];
+
+  if (HAS_TS_HELPERS.test(content)) {
+    getTransforms.push(getImportTslibTransformer);
+  }
+
+
   if (HAS_DECORATORS.test(content) || HAS_CTOR_PARAMETERS.test(content)) {
+    // Order matters, getPrefixFunctionsTransformer needs to be called before getFoldFileTransformer.
+    getTransforms.push(...[
+      getPrefixFunctionsTransformer,
+      getScrubFileTransformer,
+      getFoldFileTransformer,
+    ]);
+  }
+
+  if (getTransforms.length > 0) {
+    // Only transform if there are transforms to apply.
     return transformJavascript({
       content,
-      // Order matters, getPrefixFunctionsTransformer needs to be called before getFoldFileTransformer.
-      getTransforms: [
-        getImportTslibTransformer,
-        getPrefixFunctionsTransformer,
-        getScrubFileTransformer,
-        getFoldFileTransformer,
-      ],
+      getTransforms,
       emitSourceMap,
       inputFilePath,
       outputFilePath,
       strict,
     });
-  }
-
-  if (emitSourceMap) {
+  } else if (emitSourceMap) {
     // Emit a sourcemap with no changes.
     const ms = new MagicString(content);
     return {
@@ -59,7 +70,6 @@ export function ngo(options: NgoOptions): { content: string, sourceMap: RawSourc
         source: inputFilePath,
         file: outputFilePath ? `${outputFilePath}.map` : null,
         includeContent: true,
-        hires: true,
       }),
     };
   } else {
