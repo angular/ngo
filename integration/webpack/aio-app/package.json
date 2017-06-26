@@ -7,7 +7,7 @@
     "build-no-ngo": "rimraf dist-no-ngo && webpack --config=webpack.config.no-ngo.js --hide-modules",
     "build-old-ngo": "rimraf dist-old-ngo && webpack --config=webpack.config.old-ngo.js --hide-modules",
     "serve": "lite-server",
-    "pree2e": "yarn build",
+    "pree2e": "yarn build -- --devtool=source-map",
     "e2e": "concurrently \"yarn serve\" \"yarn protractor\" --kill-others --success first",
     "preprotractor": "webdriver-manager update",
     "protractor": "protractor protractor.config.js",

@@ -9,7 +9,7 @@ const src = path.resolve(__dirname, 'src/');
 const dist = path.resolve(__dirname, 'dist/');
 
 module.exports = {
-  devtool: 'sourcemap',
+  devtool: false,
   stats: {
     colors: true,
     hash: true,
