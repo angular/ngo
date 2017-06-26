@@ -1,14 +1,12 @@
 const path = require('path');
 const webpack = require('webpack');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ngToolsWebpack = require('@ngtools/webpack');
 const CompressionPlugin = require('compression-webpack-plugin');
 
 
 const src = path.resolve(__dirname, 'src/');
 const dist = path.resolve(__dirname, 'dist/');
-const nodeModules = path.resolve(__dirname, 'node_modules/');
-const genDirNodeModules = path.resolve(__dirname, 'src', '$$_gendir');
 
 module.exports = {
   devtool: 'sourcemap',
@@ -28,23 +26,20 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.js']
   },
-  entry: path.join(src, 'main.ts'),
+  entry: {
+    main: path.join(src, 'main.ts'),
+    polyfills: path.join(src, 'polyfills.ts'),
+  },
   output: {
     path: dist,
     filename: '[name].bundle.js'
   },
   plugins: [
-    new HtmlWebpackPlugin({
-      template: path.join(src, 'index.html')
-    }),
+    new CopyWebpackPlugin([
+      { from: path.join(src, 'index.html') }
+    ]),
     new ngToolsWebpack.AotPlugin({
       tsConfigPath: path.join(src, 'tsconfig.json')
-    }),
-    new webpack.optimize.CommonsChunkPlugin({
-      name: 'vendor',
-      chunks: ['main'],
-      minChunks: (module) => module.resource &&
-        (module.resource.startsWith(nodeModules) || module.resource.startsWith(genDirNodeModules))
     }),
     new CompressionPlugin({
       asset: '[path].gz[query]',
@@ -53,7 +48,15 @@ module.exports = {
       threshold: 0,
       minRatio: 0.8
     }),
+    new webpack.HashedModuleIdsPlugin(),
+    new webpack.optimize.ModuleConcatenationPlugin(),
+    new webpack.DefinePlugin({
+      'process.env': {
+        'NODE_ENV': JSON.stringify('production')
+      }
+    }),
     new webpack.optimize.UglifyJsPlugin({
+      beautify: false,
       mangle: { screw_ie8: true },
       compress: { screw_ie8: true, warnings: false, pure_getters: true },
       sourceMap: true,
@@ -65,5 +68,16 @@ module.exports = {
       { test: /\.css$/, loader: 'raw-loader' },
       { test: /\.html$/, loader: 'raw-loader' }
     ]
+  },
+  node: {
+    fs: 'empty',
+    global: true,
+    crypto: 'empty',
+    tls: 'empty',
+    net: 'empty',
+    process: true,
+    module: false,
+    clearImmediate: false,
+    setImmediate: false
   }
 };

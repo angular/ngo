@@ -1,7 +1,7 @@
 import { browser, element, by } from 'protractor';
 
-describe('QuickStart Lib E2E Tests', function () {
-  
+describe('Webpack simple app', function () {
+
   beforeEach(() => browser.get(''));
 
   afterEach(() => {
