@@ -1,7 +1,7 @@
 import { oneLine, stripIndent } from 'common-tags';
 
+import { transformJavascript } from '../helpers/transform-javascript';
 import { getImportTslibTransformer } from './import-tslib';
-import { transformJavascript } from './transform-javascript';
 
 
 const transform = (content: string) => transformJavascript(

@@ -22,4 +22,4 @@ var ngoOutput = ngo_1.ngo({
 });
 fs_1.writeFileSync(path_1.join(currentDir, outputFile), ngoOutput.content);
 fs_1.writeFileSync(path_1.join(currentDir, outputFile + ".map"), JSON.stringify(ngoOutput.sourceMap));
-//# sourceMappingURL=ngo-cli.js.map
+//# sourceMappingURL=cli.js.map

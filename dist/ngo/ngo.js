@@ -2,11 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs_1 = require("fs");
 var MagicString = require('magic-string');
-var class_fold_1 = require("./class-fold");
-var import_tslib_1 = require("./import-tslib");
-var prefix_functions_1 = require("./prefix-functions");
-var scrub_file_1 = require("./scrub-file");
-var transform_javascript_1 = require("./transform-javascript");
+var transform_javascript_1 = require("../helpers/transform-javascript");
+var class_fold_1 = require("../transforms/class-fold");
+var import_tslib_1 = require("../transforms/import-tslib");
+var prefix_functions_1 = require("../transforms/prefix-functions");
+var scrub_file_1 = require("../transforms/scrub-file");
 var HAS_DECORATORS = /decorators/;
 var HAS_CTOR_PARAMETERS = /ctorParameters/;
 var HAS_TS_HELPERS = /var (__extends|__decorate|__metadata|__param) = /;

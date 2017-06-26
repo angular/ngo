@@ -3,7 +3,7 @@ const PurifyPlugin = require('ngo').PurifyPlugin;
 const config = require('./webpack.config.common.js');
 
 const ngoLoaderRule = {
-  loader: 'ngo/dist/ngo-webpack-loader',
+  loader: 'ngo/dist/ngo/webpack-loader',
   options: {
     sourceMap: true
   }

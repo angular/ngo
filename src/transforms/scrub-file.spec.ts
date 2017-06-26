@@ -1,7 +1,7 @@
 import { oneLine, stripIndent } from 'common-tags';
 
+import { transformJavascript } from '../helpers/transform-javascript';
 import { getScrubFileTransformer } from './scrub-file';
-import { transformJavascript } from './transform-javascript';
 
 
 const transform = (content: string) => transformJavascript(
