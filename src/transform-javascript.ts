@@ -102,7 +102,6 @@ export const transformJavascript = (options: TransformJavascriptOptions) => {
           source: inputFilePath,
           file: outputFilePath ? `${outputFilePath}.map` : null,
           includeContent: true,
-          hires: true,
         }),
       };
     }
