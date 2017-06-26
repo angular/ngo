@@ -26,6 +26,6 @@ jobs:
           paths:
             - "integration/webpack/simple-app/node_modules"
       - save_cache:
-          key: ngo-aio-app-{{ .Branch }}-{{ checksum "integration/webpack/simple-app/yarn.lock" }}
+          key: ngo-aio-app-{{ .Branch }}-{{ checksum "integration/webpack/aio-app/yarn.lock" }}
           paths:
             - "integration/webpack/aio-app/node_modules"
