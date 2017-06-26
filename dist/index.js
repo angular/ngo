@@ -1,9 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var ngo_webpack_loader_1 = require("./ngo-webpack-loader");
-exports.default = ngo_webpack_loader_1.ngoLoader;
-var ngo_webpack_loader_2 = require("./ngo-webpack-loader");
-exports.ngoLoader = ngo_webpack_loader_2.ngoLoader;
+exports.ngoLoader = ngo_webpack_loader_1.default;
 var ngo_1 = require("./ngo");
 exports.ngo = ngo_1.ngo;
 var class_fold_1 = require("./class-fold");

@@ -8,7 +8,7 @@ interface NgoLoaderOptions {
   sourceMap: boolean;
 }
 
-export function ngoLoader(content: string, previousSourceMap: RawSourceMap) {
+export default function ngoLoader(content: string, previousSourceMap: RawSourceMap) {
   this.cacheable();
   const options: NgoLoaderOptions = loaderUtils.getOptions(this);
 

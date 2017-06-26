@@ -9,6 +9,7 @@ var scrub_file_1 = require("./scrub-file");
 var transform_javascript_1 = require("./transform-javascript");
 var HAS_DECORATORS = /decorators/;
 var HAS_CTOR_PARAMETERS = /ctorParameters/;
+var HAS_TS_HELPERS = /var (__extends|__decorate|__metadata|__param) = /;
 function ngo(options) {
     options.emitSourceMap = !!options.emitSourceMap;
     var inputFilePath = options.inputFilePath, emitSourceMap = options.emitSourceMap, outputFilePath = options.outputFilePath, strict = options.strict;
@@ -19,23 +20,31 @@ function ngo(options) {
     if (!content) {
         content = fs_1.readFileSync(inputFilePath, 'UTF-8');
     }
+    // Determine which transforms to apply.
+    var getTransforms = [];
+    if (HAS_TS_HELPERS.test(content)) {
+        getTransforms.push(import_tslib_1.getImportTslibTransformer);
+    }
     if (HAS_DECORATORS.test(content) || HAS_CTOR_PARAMETERS.test(content)) {
+        // Order matters, getPrefixFunctionsTransformer needs to be called before getFoldFileTransformer.
+        getTransforms.push.apply(getTransforms, [
+            prefix_functions_1.getPrefixFunctionsTransformer,
+            scrub_file_1.getScrubFileTransformer,
+            class_fold_1.getFoldFileTransformer,
+        ]);
+    }
+    if (getTransforms.length > 0) {
+        // Only transform if there are transforms to apply.
         return transform_javascript_1.transformJavascript({
             content: content,
-            // Order matters, getPrefixFunctionsTransformer needs to be called before getFoldFileTransformer.
-            getTransforms: [
-                import_tslib_1.getImportTslibTransformer,
-                prefix_functions_1.getPrefixFunctionsTransformer,
-                scrub_file_1.getScrubFileTransformer,
-                class_fold_1.getFoldFileTransformer,
-            ],
+            getTransforms: getTransforms,
             emitSourceMap: emitSourceMap,
             inputFilePath: inputFilePath,
             outputFilePath: outputFilePath,
             strict: strict,
         });
     }
-    if (emitSourceMap) {
+    else if (emitSourceMap) {
         // Emit a sourcemap with no changes.
         var ms = new MagicString(content);
         return {
@@ -44,7 +53,6 @@ function ngo(options) {
                 source: inputFilePath,
                 file: outputFilePath ? outputFilePath + ".map" : null,
                 includeContent: true,
-                hires: true,
             }),
         };
     }
