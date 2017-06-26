@@ -1,7 +1,10 @@
 import * as ts from 'typescript';
-import { NgoOptions } from './ngo';
-export interface TransformJavascriptOptions extends NgoOptions {
+export interface TransformJavascriptOptions {
     content: string;
+    inputFilePath?: string;
+    outputFilePath?: string;
+    emitSourceMap?: boolean;
+    strict?: boolean;
     getTransforms: Array<(program: ts.Program) => ts.TransformerFactory<ts.SourceFile>>;
 }
 export declare const transformJavascript: (options: TransformJavascriptOptions) => {

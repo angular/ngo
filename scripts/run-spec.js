@@ -10,7 +10,7 @@ const projectRoot = path.join(__dirname, '../');
 const projectBaseDir = path.join(projectRoot, 'src');
 
 // Register ts-node so typescript is compiled on the fly.
-require('ts-node').register({ project: path.join(projectRoot, 'tsconfig.spec.json') })
+require('ts-node').register({ project: path.join(projectRoot, 'src', 'tsconfig.spec.json') })
 
 // Create a Jasmine runner and configure it.
 const jasmine = new Jasmine({ projectBaseDir });

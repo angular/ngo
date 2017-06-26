@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ]
+  },
+  "files": [
+    "index.ts",
+    "ngo/cli.ts",
+    "purify/cli.ts"
+  ]
+}

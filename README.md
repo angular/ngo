@@ -124,7 +124,7 @@ module.exports = {
     rules: [
       {
         test: /\.js$/,
-        loader: 'ngo/dist/ngo-webpack-loader'
+        loader: 'ngo/dist/ngo/webpack-loader'
         options: {
           sourceMap: false
         }

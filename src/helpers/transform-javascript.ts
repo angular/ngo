@@ -4,11 +4,13 @@ import { RawSourceMap } from 'source-map';
 import * as ts from 'typescript';
 const MagicString = require('magic-string');
 
-import { NgoOptions } from './ngo';
 
-
-export interface TransformJavascriptOptions extends NgoOptions {
+export interface TransformJavascriptOptions {
   content: string;
+  inputFilePath?: string;
+  outputFilePath?: string;
+  emitSourceMap?: boolean;
+  strict?: boolean;
   getTransforms: Array<(program: ts.Program) => ts.TransformerFactory<ts.SourceFile>>;
 }
 

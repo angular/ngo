@@ -2,11 +2,11 @@ import { readFileSync } from 'fs';
 import { RawSourceMap } from 'source-map';
 const MagicString = require('magic-string');
 
-import { getFoldFileTransformer } from './class-fold';
-import { getImportTslibTransformer } from './import-tslib';
-import { getPrefixFunctionsTransformer } from './prefix-functions';
-import { getScrubFileTransformer } from './scrub-file';
-import { transformJavascript } from './transform-javascript';
+import { transformJavascript } from '../helpers/transform-javascript';
+import { getFoldFileTransformer } from '../transforms/class-fold';
+import { getImportTslibTransformer } from '../transforms/import-tslib';
+import { getPrefixFunctionsTransformer } from '../transforms/prefix-functions';
+import { getScrubFileTransformer } from '../transforms/scrub-file';
 
 
 const HAS_DECORATORS = /decorators/;

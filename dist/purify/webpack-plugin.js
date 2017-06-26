@@ -21,4 +21,4 @@ var PurifyPlugin = (function () {
     return PurifyPlugin;
 }());
 exports.PurifyPlugin = PurifyPlugin;
-//# sourceMappingURL=purify-webpack-plugin.js.map
+//# sourceMappingURL=webpack-plugin.js.map

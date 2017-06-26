@@ -17,4 +17,4 @@ if (!inputFile.match(tsOrJsRegExp)) {
 var outputFile = process.argv[3] || inputFile.replace(tsOrJsRegExp, function (subStr) { return ".purify" + subStr; });
 var purifyOutput = purify_1.purify(fs_1.readFileSync(path_1.join(currentDir, inputFile), 'UTF-8'));
 fs_1.writeFileSync(path_1.join(currentDir, outputFile), purifyOutput);
-//# sourceMappingURL=purify-cli.js.map
+//# sourceMappingURL=cli.js.map

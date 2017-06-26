@@ -5,6 +5,7 @@ var importCommentRegex = /\/\*\* PURE_IMPORTS_START (\S+) PURE_IMPORTS_END \*\//
 // TODO: handle sourcemaps
 function purify(content) {
     var pureImportMatches = getMatches(content, importCommentRegex, 1).join('|');
+    // console.log(content.match(/^(var (\S+) = )(\(function \(\) \{\r?\n(?:    (?:\/\*\*| \*|\*\/|\/\/)[^\r?\n]*\r?\n)*    function \2\([^\)]*\) \{\r?\n)/mg))
     var newContent = content
         .replace(
     // tslint:disable-next-line:max-line-length
