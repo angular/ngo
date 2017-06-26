@@ -10,7 +10,7 @@ interface NgoLoaderOptions {
 
 export default function ngoLoader(content: string, previousSourceMap: RawSourceMap) {
   this.cacheable();
-  const options: NgoLoaderOptions = loaderUtils.getOptions(this);
+  const options: NgoLoaderOptions = loaderUtils.getOptions(this) || {};
 
   const ngoOutput = ngo({ content, emitSourceMap: options.sourceMap });
   const intermediateSourceMap = ngoOutput.sourceMap;
