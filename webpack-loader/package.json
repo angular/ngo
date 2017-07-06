@@ -1,0 +1,3 @@
+{
+  "main": "../dist/ngo/webpack-loader.js"
+}
