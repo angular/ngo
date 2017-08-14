@@ -1,5 +1,8 @@
 [![CircleCI](https://circleci.com/gh/angular/ngo/tree/master.svg?style=shield)](https://circleci.com/gh/angular/ngo/tree/master)
 
+# Warning
+This package is no longer being maitained. It's functionality has been moved to https://github.com/angular/devkit/tree/master/packages/angular_devkit/build_optimizer.
+
 # Angular Optimizer (NGO)
 
 NGO contains Angular optimizations applicable to JavaScript code as a TypeScript transform pipeline.
